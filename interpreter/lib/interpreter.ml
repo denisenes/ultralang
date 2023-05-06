@@ -1,11 +1,14 @@
 exception SyntaxError of string;;
+exception PrintError  of string;;
 
 open Utils
 
 type lobject = 
-    Fixnum  of int    |
-    Boolean of bool   |
-    Symbol  of string
+    Fixnum  of int               |
+    Boolean of bool              |
+    Symbol  of string            |
+    Pair    of lobject * lobject |
+    Nil
 
 type input_stream =
   { mutable line_num: int; 
@@ -58,9 +61,13 @@ let rec read_symbol stream =
     then let _ = unread_char stream nc in ""
     else string_of_char nc ^ read_symbol stream
   
-let read_sexpression stream = 
+let rec read_sexpression stream = 
   eat_whitespaces stream;
   let c = read_char stream in
+
+  if c = '('
+    then read_list stream
+    else
 
   if is_sym_forwarding_chr c 
     then Symbol(string_of_char c ^ read_symbol stream)
@@ -72,13 +79,52 @@ let read_sexpression stream =
 
   if c = '#'
     then read_boolean stream
-    else raise (SyntaxError ("Unexpected char " ^ (string_of_char c)));;
+    else raise (SyntaxError ("Unexpected char " ^ (string_of_char c)))
 
-let print_sexpression sexpr =
+and read_list stream =
+  eat_whitespaces stream;
+  let c = read_char stream in
+  if c = ')'
+    then Nil
+    else 
+      let _ = unread_char stream c in
+      let car = read_sexpression stream in
+      let cdr = read_list stream in
+      Pair(car, cdr);;
+
+let rec is_list pair =
+  match pair with
+    | Nil -> true
+    | Pair(_ , cdr) -> is_list cdr
+    | _ -> false
+
+let rec print_sexpression sexpr =
   match sexpr with
     | Fixnum(value)  -> print_int value
     | Boolean(b) -> print_string (if b then "#t" else "#f")
     | Symbol(name) -> print_string name
+    | Pair(_ , _) -> 
+      print_string "(";
+      if is_list sexpr then print_list sexpr else print_pair sexpr;
+      print_string ")"
+    | Nil -> print_string "nil"
+
+and print_list list = 
+  match list with
+    | Pair(car, Nil) -> print_sexpression car
+    | Pair(car, cdr) -> 
+      print_sexpression car;
+      print_string " ";
+      print_list cdr;
+    | _ -> raise (PrintError("Something went wrong while printing list"))
+
+and print_pair pair = match pair with
+  | Pair (car, cdr) -> 
+    print_sexpression car;
+    print_string ".";
+    print_sexpression cdr;
+  | _ -> raise (PrintError("Something went wrong while printing pair"))
+
 
 let rec repl stream = 
   print_string "> ";
