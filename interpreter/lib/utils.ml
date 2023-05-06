@@ -1,3 +1,5 @@
+open Common
+
 let whitespaces =  ['\n'; ' '; '\t'; '\r']
 let spec_symbols = ['*'; '+'; '-'; '/'; '>'; '<'; '='; '?'; '!'; '-'; '+'; '\'']
 let delimiters = ['('; ')'; '{'; '}'; ';'; '\"']
@@ -18,3 +20,9 @@ let is_sym_forwarding_chr c =
   if List.mem c spec_symbols
     then true
     else is_alpha c
+
+let rec is_list pair =
+  match pair with
+    | Nil -> true
+    | Pair(_ , cdr) -> is_list cdr
+    | _ -> false
