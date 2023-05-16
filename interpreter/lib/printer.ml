@@ -10,6 +10,8 @@ let rec print_sexpression sexpr =
       print_string "(";
       if is_list sexpr then print_list sexpr else print_pair sexpr;
       print_string ")"
+
+    | Primitive (name,  _) -> print_string ("<" ^ name ^ ">")
     | Nil -> print_string "nil"
 
 and print_list list = 
@@ -24,6 +26,6 @@ and print_list list =
 and print_pair pair = match pair with
   | Pair (car, cdr) -> 
     print_sexpression car;
-    print_string ".";
+    print_string " . ";
     print_sexpression cdr;
   | _ -> raise (PrintError("Something went wrong while printing pair"))

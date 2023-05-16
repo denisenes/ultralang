@@ -8,4 +8,4 @@ let rec lookup (name, env) =
     | _ -> raise (NotFoundInEnv("Couldn't find value for name " ^ name))
 
 let bind (name, value, env) =
-  Pair(Pair(name, value), env)
+  Pair(Pair(Symbol(name), value), env)

@@ -80,5 +80,4 @@ and read_list stream =
     else 
       let _ = unread_char stream c in
       let car = read_sexpression stream in
-      let cdr = read_list stream in
-      Pair(car, cdr);;
+      Pair(car, read_list stream);;

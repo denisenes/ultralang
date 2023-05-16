@@ -1,8 +1,9 @@
 type lobject = 
-    Fixnum  of int               |
-    Boolean of bool              |
-    Symbol  of string            |
-    Pair    of lobject * lobject |
+    Fixnum    of int                                |
+    Boolean   of bool                               |
+    Symbol    of string                             |
+    Pair      of lobject * lobject                  |
+    Primitive of string * (lobject list -> lobject) |
     Nil
 
 exception SyntaxError     of string;;
