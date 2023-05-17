@@ -26,3 +26,12 @@ let rec is_list pair =
     | Nil -> true
     | Pair(_ , cdr) -> is_list cdr
     | _ -> false
+
+let rec list_of_pairs' sexpr acc =
+  match sexpr with
+    | Nil -> List.rev acc
+    | Pair(car, cdr) -> list_of_pairs' cdr (car :: acc)
+    | _ -> raise (EvaluationError("Cannot transform Pair to list"))
+
+let list_of_pairs (sexpr : value) : value list = 
+  list_of_pairs' sexpr [] 

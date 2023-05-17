@@ -81,3 +81,23 @@ and read_list stream =
       let _ = unread_char stream c in
       let car = read_sexpression stream in
       Pair(car, read_list stream);;
+
+(* ================== AST related stuff ================== *)
+
+let rec build_ast (sexpr : value) : exp =
+  match sexpr with
+  | Primitive _ -> raise (SyntaxError ("Met primitive while AST building"))
+  | Fixnum _ | Boolean _ | Nil -> Literal sexpr
+  | Symbol s -> Var s
+  | Pair _ when is_list sexpr ->
+    (match list_of_pairs sexpr with
+    | [Symbol "if"; cond; if_true; if_false] ->
+      If (build_ast cond, build_ast if_true, build_ast if_false)
+    | [Symbol "and"; c1; c2] -> And (build_ast c1, build_ast c2)
+    | [Symbol "or"; c1; c2] -> Or (build_ast c1, build_ast c2)
+    | [Symbol "val"; Symbol name; e] -> Defexp (Val (name, build_ast e))
+    | [Symbol "apply"; fnexp; args] when is_list args ->
+      Apply (build_ast fnexp, build_ast args)
+    | fnexp::args -> Call (build_ast fnexp, List.map build_ast args)
+    | [] -> raise (SyntaxError "Poorly formed expression"))
+  | Pair _ -> Literal sexpr

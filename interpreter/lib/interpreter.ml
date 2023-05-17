@@ -21,15 +21,6 @@ let base_env =
     ("pair", prim_pair)
   ]
 
-let rec list_of_pairs' sexpr acc =
-  match sexpr with
-    | Nil -> List.rev acc
-    | Pair(car, cdr) -> list_of_pairs' cdr (car :: acc)
-    | _ -> raise (EvaluationError("Cannot transform Pair to list"))
-
-let list_of_pairs sexpr = 
-  list_of_pairs' sexpr []
-
 let rec eval_sexpression sexpr env =
   match sexpr with
     | Boolean(v) -> (Boolean(v), env)
@@ -71,11 +62,12 @@ let rec loop stream env =
   flush stdout;
   (* Read *)
   let expr = read_sexpression stream in
+  (* AST build*)
+  (*let ast = build_ast expr in*)
   (* Eval *)
-  let (res, env') = eval_sexpression expr env in
+  let (value, env') = eval_sexpression expr env in
   (* Print *)
-  print_sexpression res;
-  print_newline ();
+  print_value value;
   (* Loop *)
   loop stream env';;
 
