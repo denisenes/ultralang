@@ -97,6 +97,7 @@ let rec loop stream env =
   (* Eval *)
   let (value, env') = eval_ast ast env in
   (* Print *)
+  print_endline ("AST: " ^ ast_to_string ast);
   print_value value;
   (* Loop *)
   loop stream env'
