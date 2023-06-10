@@ -71,3 +71,15 @@ Val
   300
   $ ${INTERPRETER} "(val a (- 321 21))"
   300
+
+List
+  $ ${INTERPRETER} "(list 1 2 3 4 5)"
+  (1 2 3 4 5)
+  $ ${INTERPRETER} "(list 1 #f 2 #t)"
+  (1 #f 2 #t)
+
+Apply
+  $ ${INTERPRETER} "(apply pair (list #f #t))"
+  (#f . #t)
+  $ ${INTERPRETER} "(apply + (list 23 34))"
+  57

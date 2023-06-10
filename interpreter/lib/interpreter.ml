@@ -28,12 +28,17 @@ let base_env =
   let new_prim acc (name, func) = 
     bind (name, Primitive(name, func), acc)
   in
+  let rec prim_list = function
+    | [] -> Nil
+    | car::cdr -> Pair(car, prim_list cdr)
+  in
   List.fold_left new_prim Nil [
     ("+", prim_plus);
     ("-", prim_minus);
     ("*", prim_mul);
     ("/", prim_div);
-    ("pair", prim_pair)
+    ("pair", prim_pair);
+    ("list", prim_list)
   ]
 
 let eval_apply func exprs =
@@ -81,7 +86,7 @@ let executor (source : string) : string =
   let (value, _) = eval_ast ast base_env                   in
   value_to_string value
 
-let loop stream env = 
+let rec loop stream env = 
   print_string "> ";
   flush stdout;
   (* Read *)
@@ -89,11 +94,11 @@ let loop stream env =
   (* AST build*)
   let ast = build_ast expr in
   (* Eval *)
-  let (value, _) = eval_ast ast env in
+  let (value, env') = eval_ast ast env in
   (* Print *)
-  print_value value
+  print_value value;
   (* Loop *)
-  (* loop stream env' *)
+  loop stream env'
 
 let repl_starter () = 
   let stream = { buffer=[]; line_num=0; source=(Chan stdin)} in
