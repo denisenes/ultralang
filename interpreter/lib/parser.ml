@@ -1,16 +1,38 @@
 open Common
 open Utils
 
+type string_reader =
+  {
+    mutable sym_idx : int;
+    buffer          : string
+  };;
+  
+let constr_string_reader (s : string) : string_reader =
+  { sym_idx=0 ; buffer = s ^ "\n" }
+
+let sr_get_symbol (sr : string_reader) : char =
+  let sym = String.get sr.buffer sr.sym_idx in
+  sr.sym_idx <- sr.sym_idx + 1;
+  sym
+
+type input_source = Chan of in_channel | String of string_reader 
+
 type input_stream =
-  { mutable line_num: int; 
-    mutable buffer: char list; 
-    in_chan: in_channel };;
+  {
+    mutable line_num : int; 
+    mutable buffer   : char list; 
+    source           : input_source 
+  };;
 
 (* read one character from input stream *)
 let read_char stream =
   match stream.buffer with
     | [] ->
-      let c = input_char stream.in_chan in
+      let c = begin match stream.source with
+        | Chan channel -> input_char channel
+        | String sr    -> sr_get_symbol sr
+      end
+      in
       if c = '\n' 
         then let _ = stream.line_num <- stream.line_num + 1 in c
         else c

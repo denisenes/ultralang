@@ -27,6 +27,7 @@ let rec is_list pair =
     | Pair(_ , cdr) -> is_list cdr
     | _ -> false
 
+(* (Pair x1 (Pair x2 ...)) --> [x1, x2, ...] *)
 let rec list_of_pairs' sexpr acc =
   match sexpr with
     | Nil -> List.rev acc

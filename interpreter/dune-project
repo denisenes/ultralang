@@ -1,8 +1,8 @@
 (lang dune 3.7)
 
-(name interpreter)
+(name main)
 
-(generate_opam_files true)
+(generate_opam_files false)
 
 (source
  (github username/reponame))
@@ -16,7 +16,7 @@
 (documentation https://url/to/documentation)
 
 (package
- (name interpreter)
+ (name main)
  (synopsis "A short synopsis")
  (description "A longer description")
  (depends ocaml dune)
