@@ -4,6 +4,7 @@ type lobject =
     Symbol    of string                             |
     Pair      of lobject * lobject                  |
     Primitive of string * (lobject list -> lobject) |
+    Quote     of value                              | 
     Nil
 
 and value = lobject

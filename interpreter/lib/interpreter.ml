@@ -48,6 +48,7 @@ let eval_apply func exprs =
 
 let rec eval_expr expr env =
   let rec eval_expr' = function
+    | Literal (Quote datum) -> datum
     | Literal literal -> literal
     | Var name -> lookup (name, env)
     | If (cond, if_true,  _) when eval_expr' cond = Boolean true -> 

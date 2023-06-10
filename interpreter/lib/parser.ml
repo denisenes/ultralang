@@ -78,6 +78,10 @@ let rec read_sexpression stream =
   eat_whitespaces stream;
   let c = read_char stream in
 
+  if c = '\''
+    then Quote(read_sexpression stream)
+    else
+
   if c = '('
     then read_list stream
     else
@@ -92,7 +96,9 @@ let rec read_sexpression stream =
 
   if c = '#'
     then read_boolean stream
-    else raise (SyntaxError ("Unexpected char " ^ (string_of_char c)))
+    else 
+  
+  raise (SyntaxError ("Unexpected char " ^ (string_of_char c)))
 
 and read_list stream =
   eat_whitespaces stream;
@@ -109,10 +115,11 @@ and read_list stream =
 let rec build_ast (sexpr : value) : exp =
   match sexpr with
   | Primitive _ -> raise (SyntaxError ("Met primitive while AST building"))
-  | Fixnum _ | Boolean _ | Nil -> Literal sexpr
+  | Fixnum _ | Boolean _ | Nil | Quote _ -> Literal sexpr
   | Symbol s -> Var s
   | Pair _ when is_list sexpr ->
     (match list_of_pairs sexpr with
+    | [Symbol "quote"; datum] -> Literal (Quote datum)
     | [Symbol "if"; cond; if_true; if_false] ->
       If (build_ast cond, build_ast if_true, build_ast if_false)
     | [Symbol "and"; c1; c2] -> And (build_ast c1, build_ast c2)

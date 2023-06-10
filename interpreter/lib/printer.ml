@@ -12,6 +12,7 @@ let rec value_to_string (sexpr : value) : string =
       ^ ")"
 
     | Primitive (name,  _) -> "<" ^ name ^ ">"
+    | Quote datum -> "\'" ^ value_to_string datum
     | Nil -> "nil"
 
 and list_to_string (list : value) : string = 
