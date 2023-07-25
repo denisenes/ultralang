@@ -15,6 +15,11 @@ let sr_get_symbol (sr : string_reader) : char =
   sr.sym_idx <- sr.sym_idx + 1;
   sym
 
+let sr_peek (sr : string_reader) : char =
+  if sr.sym_idx >= String.length sr.buffer
+    then raise End_of_file
+    else String.get sr.buffer sr.sym_idx
+
 type input_source = Chan of in_channel | String of string_reader 
 
 type input_stream =
@@ -23,6 +28,22 @@ type input_stream =
     mutable buffer   : char list; 
     source           : input_source 
   };;
+
+(* peek next character without stream modification *)
+let peek_char stream =
+  match stream.buffer with
+    | [] ->
+      let c = begin match stream.source with
+        | Chan _ -> raise End_of_file (* TODO: peek from channel *)
+        | String sr -> sr_peek sr 
+      end in c
+    | c::_ -> c
+
+let eof_in_stream stream =
+  try
+    let _ = peek_char stream in false
+  with
+    End_of_file -> true
 
 (* read one character from input stream *)
 let read_char stream =
@@ -45,6 +66,8 @@ let unread_char stream c =
 
 (* remove leading whitespaces in stream *)
 let rec eat_whitespaces stream =
+  if eof_in_stream stream then () else
+    
   let chr = read_char stream in
   if is_white chr
     then eat_whitespaces stream 
@@ -109,6 +132,13 @@ and read_list stream =
       let _ = unread_char stream c in
       let car = read_sexpression stream in
       Pair(car, read_list stream);;
+
+let rec read_sexprs stream : value list =
+  eat_whitespaces stream;
+  let eof_occured = eof_in_stream stream in
+  if eof_occured
+    then []
+    else let exp = read_sexpression stream in exp::(read_sexprs stream)
 
 (* ================== AST related stuff ================== *)
 

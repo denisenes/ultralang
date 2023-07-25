@@ -102,13 +102,18 @@ and eval_ast ast env =
   | Defexp dexp -> eval_defexpr dexp env
   | exp -> (eval_expr exp env, env)
 
-let executor (source : string) : string =
+let executor (source : string) : unit =
   let sr = constr_string_reader source                     in
   let stream = {buffer=[]; line_num=0; source=(String sr)} in
-  let expr = read_sexpression stream                       in
-  let ast = build_ast expr                                 in
-  let (value, _) = eval_ast ast base_env                   in
-  value_to_string value
+  let exprs = read_sexprs stream in
+  let asts = List.map (fun e -> build_ast e) exprs in
+
+  let last_env : value env ref = ref base_env in (* needed to forward env through exprs during evaluation*)
+  let values = List.map 
+    (fun ast -> let (v, env) = eval_ast ast !last_env in last_env := env; v) 
+    asts in
+  let _ = List.map (fun v -> if is_printable_value v then print_value v else ()) values in
+  ();;
 
 let rec loop stream env = 
   print_string "> ";

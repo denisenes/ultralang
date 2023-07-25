@@ -1,6 +1,19 @@
 open Common
 open Utils
 
+let dbg_mode = false
+
+let is_printable_value = function
+  | Fixnum _ -> true
+  | Boolean _ -> true
+  | Symbol  _ -> true
+  | Pair _ -> true
+  | Primitive _ -> dbg_mode
+  | Closure _ -> dbg_mode
+  | Quote _ -> true
+  | Nil -> true
+
+
 let rec ast_to_string (node : exp) : string =
   match node with
   | Literal e -> "Lit(" ^ value_to_string e ^ ")"
