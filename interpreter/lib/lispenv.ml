@@ -1,11 +1,20 @@
 open Common
 
-let rec lookup (name, env) =
-  match env with
-    | Pair(Pair(Symbol name', value), rest) ->
-      if name = name' then value
-      else lookup (name, rest)
-    | _ -> raise (NotFoundInEnv("Couldn't find value for name " ^ name))
+let mkloc () = ref None
+
+let bindloc (name, value_or_none, env) : value env = 
+  (name, value_or_none)::env
+
+let rec lookup = function
+  | (name, []) -> raise (NotFoundInEnv ("Couldn't find value for name " ^ name))
+  | (name, (name', value_or_none)::rest) ->
+    if name = name' then match !value_or_none with
+      | Some value -> value
+      | None -> raise (ValueNotSpecified ("Value for name " ^ name ^ "doesn't exist"))
+    else lookup (name, rest)
 
 let bind (name, value, env) =
-  Pair(Pair(Symbol(name), value), env)
+  (name, ref (Some value))::env
+
+let bind_bunch names values env =
+  List.fold_left2 (fun acc name value -> bind (name, value, acc)) env names values

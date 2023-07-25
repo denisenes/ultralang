@@ -115,6 +115,7 @@ and read_list stream =
 let rec build_ast (sexpr : value) : exp =
   match sexpr with
   | Primitive _ -> raise (SyntaxError ("Met primitive while AST building"))
+  | Closure (_, _, _) -> raise (SyntaxError "Met closure while AST building")
   | Fixnum _ | Boolean _ | Nil | Quote _ -> Literal sexpr
   | Symbol s -> Var s
   | Pair _ when is_list sexpr ->
@@ -125,7 +126,15 @@ let rec build_ast (sexpr : value) : exp =
     | [Symbol "and"; c1; c2] -> And (build_ast c1, build_ast c2)
     | [Symbol "or"; c1; c2] -> Or (build_ast c1, build_ast c2)
     | [Symbol "val"; Symbol name; e] -> Defexp (Val (name, build_ast e))
-    | [Symbol "apply"; fnexp; args] when is_list args ->
+    | [Symbol "lambda"; args; body] when is_list args ->
+      let err () = raise (SyntaxError "(lambda (arguments) body)") in
+      let names = List.map (function Symbol s -> s | _ -> err ()) (list_of_pairs args) in
+      Lambda (names, build_ast body)
+    | [Symbol "fn"; Symbol name; args; body] when is_list args ->
+      let err () = raise (SyntaxError "(fn name (arguments) body)") in
+      let names = List.map (function Symbol s -> s | _ -> err ()) (list_of_pairs args) in
+      Defexp (FnDef (name, names, build_ast body))
+    | [Symbol "apply"; fnexp; args] ->
       Apply (build_ast fnexp, build_ast args)
     | fnexp::args -> Call (build_ast fnexp, List.map build_ast args)
     | [] -> raise (SyntaxError "Poorly formed expression"))

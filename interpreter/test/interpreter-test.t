@@ -83,3 +83,19 @@ Apply
   (#f . #t)
   $ ${INTERPRETER} "(apply + (list 23 34))"
   57
+
+Quote
+  $ ${INTERPRETER} "'4"
+  4
+  $ ${INTERPRETER} "'(100 200 300 #t)"
+  (100 200 300 #t)
+  $ ${INTERPRETER} "'(this is test of quotation)"
+  (this is test of quotation)
+  $ ${INTERPRETER} "'(if #t (+ 1 2) (- 2 3))"
+  (if #t (+ 1 2) (- 2 3))
+  $ ${INTERPRETER} "(quote (some other test of quotation))"
+  (some other test of quotation)
+  $ ${INTERPRETER} "(apply + '(123 321))"
+  444
+  $ ${INTERPRETER} "(val x 'x)"
+  x
