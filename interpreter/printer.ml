@@ -1,4 +1,4 @@
-open Common
+open Shared.Common
 open Utils
 
 let dbg_mode = false

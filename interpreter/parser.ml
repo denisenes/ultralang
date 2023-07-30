@@ -1,4 +1,4 @@
-open Common
+open Shared.Common
 open Utils
 
 type string_reader =

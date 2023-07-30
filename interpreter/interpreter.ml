@@ -1,6 +1,6 @@
 open Parser
 open Printer
-open Common
+open Shared.Common
 open Lispenv
 open Utils
 

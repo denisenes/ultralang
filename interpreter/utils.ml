@@ -1,4 +1,4 @@
-open Common
+open Shared.Common
 
 let whitespaces =  ['\n'; ' '; '\t'; '\r']
 let spec_symbols = ['*'; '+'; '-'; '/'; '>'; '<'; '='; '?'; '!'; '-'; '+'; '\'']
@@ -35,4 +35,4 @@ let rec list_of_pairs' sexpr acc =
     | _ -> raise (EvaluationError("Cannot transform Pair to list"))
 
 let list_of_pairs (sexpr : value) : value list = 
-  list_of_pairs' sexpr [] 
+  list_of_pairs' sexpr []

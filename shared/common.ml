@@ -34,3 +34,5 @@ exception EvaluationError of string;;
 
 exception NotFoundInEnv     of string;;
 exception ValueNotSpecified of string;;
+
+exception CompilationError of string;;

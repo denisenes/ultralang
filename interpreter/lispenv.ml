@@ -1,4 +1,4 @@
-open Common
+open Shared.Common
 
 let mkloc () = ref None
 
