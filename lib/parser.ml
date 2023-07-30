@@ -34,7 +34,7 @@ let peek_char stream =
   match stream.buffer with
     | [] ->
       let c = begin match stream.source with
-        | Chan _ -> raise End_of_file (* TODO: peek from channel *)
+        | Chan _ -> ' ' (* TODO: peek from channel *)
         | String sr -> sr_peek sr 
       end in c
     | c::_ -> c
@@ -142,7 +142,14 @@ let rec read_sexprs stream : value list =
 
 (* ================== AST related stuff ================== *)
 
-let rec build_ast (sexpr : value) : exp =
+let rec transform_cond = function
+  | [] -> Literal (Symbol "error")
+  | (Pair(cond, Pair(res, Nil)))::cond_tail ->
+    If (build_ast cond, build_ast res, transform_cond cond_tail)
+  | _ -> raise (SyntaxError "(cond conditions)")
+
+
+and build_ast (sexpr : value) : exp =
   match sexpr with
   | Primitive _ -> raise (SyntaxError ("Met primitive while AST building"))
   | Closure (_, _, _) -> raise (SyntaxError "Met closure while AST building")
@@ -153,6 +160,7 @@ let rec build_ast (sexpr : value) : exp =
     | [Symbol "quote"; datum] -> Literal (Quote datum)
     | [Symbol "if"; cond; if_true; if_false] ->
       If (build_ast cond, build_ast if_true, build_ast if_false)
+    | (Symbol "cond")::conditions -> transform_cond conditions
     | [Symbol "and"; c1; c2] -> And (build_ast c1, build_ast c2)
     | [Symbol "or"; c1; c2] -> Or (build_ast c1, build_ast c2)
     | [Symbol "val"; Symbol name; e] -> Defexp (Val (name, build_ast e))

@@ -61,9 +61,9 @@ If expression
   #f
 
 Pair
-  $ ${INTERPRETER} "(pair 123 321)"
+  $ ${INTERPRETER} "(cons 123 321)"
   (123 . 321)
-  $ ${INTERPRETER} "(pair (* 100 10) (/ 100 10))"
+  $ ${INTERPRETER} "(cons (* 100 10) (/ 100 10))"
   (1000 . 10)
 
 Val
@@ -79,7 +79,7 @@ List
   (1 #f 2 #t)
 
 Apply
-  $ ${INTERPRETER} "(apply pair (list #f #t))"
+  $ ${INTERPRETER} "(apply cons (list #f #t))"
   (#f . #t)
   $ ${INTERPRETER} "(apply + (list 23 34))"
   57
@@ -99,3 +99,11 @@ Quote
   444
   $ ${INTERPRETER} "(val x 'x)"
   x
+
+Lambda
+  $ ${INTERPRETER} "(val inc (lambda (x) (+ x 1))) (inc 1)"
+  2
+
+Define
+  $ ${INTERPRETER} "(fn inc (x) (+ x 1)) (inc 10)"
+  11

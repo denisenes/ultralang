@@ -21,7 +21,15 @@ let base_env : value env =
     | [Fixnum(a); Fixnum(b)] -> Fixnum(a / b)
     | _ -> raise (EvaluationError "(- int int)")
   in
-  let prim_eq = function
+  let prim_gt = function
+    | [Fixnum(a); Fixnum(b)] -> Boolean(a > b)
+    | _ -> raise (EvaluationError "(> int int)")
+  in
+  let prim_lt = function
+    | [Fixnum(a); Fixnum(b)] -> Boolean(a < b)
+    | _ -> raise (EvaluationError "(< int int)")
+  in
+  let prim_eq_val = function
     | [Fixnum(a); Fixnum(b)] -> Boolean(a = b)
     | [Boolean(a); Boolean(b)] -> Boolean(a = b)
     | _ -> raise (EvaluationError "(= (int|boolean) (int|boolean))")
@@ -30,6 +38,23 @@ let base_env : value env =
     | [car; cdr] -> Pair(car, cdr)
     | _ -> raise (EvaluationError("(pair sexpr sexpr)"))
   in
+  let prim_car = function
+    | [Pair (car, _)] -> car
+    | _ -> raise (EvaluationError("(car non-nil-pair)"))
+  in
+  let prim_cdr = function
+    | [Pair (_, cdr)] -> cdr
+    | _ -> raise (EvaluationError("(cdr non-nil-pair)"))
+  in
+  let prim_atom = function
+    | [Pair (_, _)] -> Boolean(false)
+    | _ -> Boolean(true)
+  in
+  let prim_eq = function
+    | [val1; val2] -> Boolean(val1 = val2)
+    | _ -> raise (EvaluationError("(eq val1 val2)"))
+  in
+
   let new_prim acc (name, func) = 
     bind (name, Primitive(name, func), acc)
   in
@@ -42,9 +67,15 @@ let base_env : value env =
     ("-", prim_minus);
     ("*", prim_mul);
     ("/", prim_div);
-    ("=", prim_eq);
-    ("pair", prim_pair);
-    ("list", prim_list)
+    (">", prim_gt);
+    ("<", prim_lt);
+    ("=", prim_eq_val);
+    ("cons", prim_pair);
+    ("list", prim_list);
+    ("car", prim_car);
+    ("cdr", prim_cdr);
+    ("atom?", prim_atom);
+    ("eq", prim_eq)
   ]
 
 let rec eval_apply func exprs =
