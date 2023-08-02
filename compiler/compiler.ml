@@ -1,12 +1,17 @@
-open Shared.Common
+open Common
+open Codegen
 
-let body = "\tmov eax, 42\n\tret\n"
+let body = [
+  Mov (Op_reg RAX, Op_immid 42); 
+  Mov (Op_reg RAX, Op_immid 123);
+  Ret
+  ]
 
 let generate_globl_func name body =
     ".globl " ^ name ^ "\n" ^
     "\t.type " ^ name ^ ", @function\n" ^
     name ^ ":\n" ^
-    body
+    gen_instr_seq body
 
 let generate_prologue out_file : unit =
   Printf.fprintf out_file "%s"
@@ -14,7 +19,7 @@ let generate_prologue out_file : unit =
 ".text\n" ^
 "\t.p2align 4,,15\n")
 
-let generate_epilogue _ : unit = ()
+let generate_epilogue out_file : unit = Printf.fprintf out_file "\n"
 
 let generate_entrypoint' out_file : unit =
   let entrypoint = generate_globl_func "ultra_entrypoint" body in
@@ -27,9 +32,9 @@ let generate_entrypoint out_file =
 
 let compiler_entry () =
   (* ultra -> asm *)
-  let out = open_out "ultra.s" in
+  let out = open_out "runtime/ultra.s" in
   generate_entrypoint out;
 
   (* asm -> binary *)
-  let res_code = Sys.command "make compile" in
-  if res_code != 0 then raise (CompilationError "gcc: compilation error")
+  let _ = Sys.command "gcc -O3 -c runtime/*.s" in
+  ();;

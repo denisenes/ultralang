@@ -2,9 +2,11 @@
 
 .text
 	.p2align 4,,15
-	
 .globl ultra_entrypoint
 	.type ultra_entrypoint, @function
 ultra_entrypoint:
-	mov eax, 42
-	ret
+mov rax, 42
+mov rax, 123
+ret
+
+

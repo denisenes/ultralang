@@ -4,7 +4,7 @@ open Shared.Common
 open Lispenv
 open Utils
 
-let base_env : value env = 
+let base_env : value env =
   let prim_plus = function
     | [Fixnum(a); Fixnum(b)] -> Fixnum(a + b)
     | _ -> raise (EvaluationError "(+ int int)")
