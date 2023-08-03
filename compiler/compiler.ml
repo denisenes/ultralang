@@ -37,4 +37,5 @@ let compiler_entry () =
 
   (* asm -> binary *)
   let _ = Sys.command "gcc -O3 -c runtime/*.s" in
+  let _ = Sys.command "rm *.o" in
   ();;

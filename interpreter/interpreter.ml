@@ -1,8 +1,8 @@
 open Shared.Parser
 open Shared.Common
 open Shared.Utils
+open Shared.Printer
 
-open Printer
 open Lispenv
 
 let base_env : value env =
