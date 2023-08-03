@@ -1,5 +1,5 @@
 open Shared.Common
-open Utils
+open Shared.Utils
 
 let dbg_mode = false
 

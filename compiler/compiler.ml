@@ -8,6 +8,7 @@ let body = [
   ]
 
 let generate_globl_func name body =
+    ".p2align 4,,15\n" ^
     ".globl " ^ name ^ "\n" ^
     "\t.type " ^ name ^ ", @function\n" ^
     name ^ ":\n" ^
@@ -16,8 +17,7 @@ let generate_globl_func name body =
 let generate_prologue out_file : unit =
   Printf.fprintf out_file "%s"
 (".intel_syntax noprefix\n\n" ^
-".text\n" ^
-"\t.p2align 4,,15\n")
+".text\n")
 
 let generate_epilogue out_file : unit = Printf.fprintf out_file "\n"
 

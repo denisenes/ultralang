@@ -1,4 +1,4 @@
-open Shared.Common
+open Common
 
 let whitespaces =  ['\n'; ' '; '\t'; '\r']
 let spec_symbols = ['*'; '+'; '-'; '/'; '>'; '<'; '='; '?'; '!'; '-'; '+'; '\'']
