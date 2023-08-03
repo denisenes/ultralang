@@ -135,8 +135,8 @@ and eval_ast ast env =
   | exp -> (eval_expr exp env, env)
 
 let executor (source : string) : unit =
-  let sr = constr_string_reader source                     in
-  let stream = {buffer=[]; line_num=0; source=(String sr)} in
+  let sr = constr_string_reader source in
+  let stream = new_input_stream sr in
   let exprs = read_sexprs stream in
   let asts = List.map (fun e -> build_ast e) exprs in
 

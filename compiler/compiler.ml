@@ -1,5 +1,9 @@
+open Shared.Parser
+open Shared.Printer
+open Shared.Common
+
 open Common
-open Codegen
+open Serializer
 
 let body = [
   Mov (Op_reg RAX, Op_immid 42); 
@@ -21,19 +25,25 @@ let generate_prologue out_file : unit =
 
 let generate_epilogue out_file : unit = Printf.fprintf out_file "\n"
 
-let generate_entrypoint' out_file : unit =
+let compile (_ : exp list) out_file =
+  (* AST -> instruction sequence *)
+
   let entrypoint = generate_globl_func "ultra_entrypoint" body in
   generate_prologue out_file;
   Printf.fprintf out_file "%s\n" entrypoint;
   generate_epilogue out_file
 
-let generate_entrypoint out_file =
-  generate_entrypoint' out_file
-
 let compiler_entry () =
+
+  (* Parse src *)
+  let asts = parse_from_file "test/sample.lsp" in
+  let _ = List.map 
+    (fun ast -> let res = ast_to_string ast in print_endline res) 
+    asts in
+
   (* ultra -> asm *)
   let out = open_out "runtime/ultra.s" in
-  generate_entrypoint out;
+  compile asts out;
 
   (* asm -> binary *)
   let _ = Sys.command "gcc -O3 -c runtime/*.s" in

@@ -1,3 +1,4 @@
 (library
  (name shared)
+ (libraries core)
  (modules common utils parser printer))

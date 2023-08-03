@@ -29,6 +29,9 @@ type input_stream =
     source           : input_source 
   };;
 
+let new_input_stream (sr : string_reader) =
+  {buffer=[]; line_num=0; source=(String sr)}
+
 (* peek next character without stream modification *)
 let peek_char stream =
   match stream.buffer with
@@ -177,3 +180,16 @@ and build_ast (sexpr : value) : exp =
     | fnexp::args -> Call (build_ast fnexp, List.map build_ast args)
     | [] -> raise (SyntaxError "Poorly formed expression"))
   | Pair _ -> Literal sexpr
+
+  (* ================== High-level functionality ================== *)
+
+let read_src_from_file filename =
+  Core.In_channel.read_all filename
+
+let parse_from_file filename : exp list =
+  let src = read_src_from_file filename in
+  let sr = constr_string_reader src in
+  let stream = new_input_stream sr in
+  let exprs = read_sexprs stream in
+  let asts = List.map (fun e -> build_ast e) exprs in
+  asts
