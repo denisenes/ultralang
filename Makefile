@@ -2,10 +2,8 @@ repl: FORCE
 	dune exec main repl
 
 compile: FORCE
-	cd runtime
-	gcc -c -O3 --omit-frame-pointer %.s %.c
-	#gcc *.o -o ultra
-	#rm *.o
+	dune exec main compile
+	cd runtime && make
 
 test: FORCE
 	dune clean
