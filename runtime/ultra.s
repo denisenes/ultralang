@@ -4,9 +4,11 @@
 .global ultra_entrypoint
 	.type ultra_entrypoint, @function
 ultra_entrypoint:
-	mov rax, 48
-	mov rax, 492
-	mov rax, 47
+	mov rax, 159
+	cmp rax, 47
+	sete al
+	sal rax, 7
+	or rax, 31
 	ret
 
 

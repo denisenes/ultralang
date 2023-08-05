@@ -6,3 +6,5 @@
 		(* num (factorial (dec num)))
 	)
 )
+
+(factorial 10)

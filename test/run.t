@@ -1,8 +1,12 @@
-  $ export INTERPRETER="dune exec main test"
+  $ export INTERPRETER="./main.exe test"
 
 Sanity check
   $ echo "Testing started"
   Testing started
+
+=================================================
+INTERPRETER TESTS
+=================================================
 
 Integers
   $ ${INTERPRETER} "1"
@@ -107,3 +111,15 @@ Lambda
 Define
   $ ${INTERPRETER} "(fn inc (x) (+ x 1)) (inc 10)"
   11
+
+Factorial
+  $ ${INTERPRETER} "$(cat fact.lsp)"
+  3628800
+
+=================================================
+COMPILER TESTS
+=================================================
+
+  $ export COMPILER="./main.exe compile"
+
+Integers

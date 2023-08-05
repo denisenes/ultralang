@@ -27,10 +27,66 @@ let gen_fixnum num =
 let gen_bool (b : bool) = 
   [Mov (Op_reg RAX, Op_immid (bool_to_immid b))]
 
-let gen_expr = function
+let rec gen_func_call fname args =
+  let check_args_size args expected = 
+    if List.length args = expected
+      then ()
+      else raise (CompilationError "Wrong args num in application")
+  in
+
+  let cmp_res_to_bool = [
+    Sete (Op_reg AL);
+    Sal  (Op_reg RAX, Op_immid bool_shift);
+    Or   (Op_reg RAX, Op_immid bool_tag)
+  ] in
+
+  let  gen_unar name args = 
+    check_args_size args 1;
+    let arg_evaluated = gen_expr (List.hd args) in
+    List.append 
+      arg_evaluated
+      (match name with
+      | "inc" -> [
+        Add (Op_reg RAX, Op_immid (fixnum_to_immid 1))
+      ]
+      | "dec" -> [
+        Sub (Op_reg RAX, Op_immid (fixnum_to_immid 1))
+      ]
+      | "zero?" -> List.append [
+        Test (Op_reg RAX, Op_reg RAX);
+        Mov  (Op_reg RAX, Op_immid (fixnum_to_immid 0));
+      ] 
+      cmp_res_to_bool
+      | "null?" -> List.append [
+        Cmp  (Op_reg RAX, Op_immid nil_tag);
+      ]
+      cmp_res_to_bool
+      | "int?" -> List.append [
+        Cmp  (Op_reg RAX, Op_immid fixnum_tag);
+      ]
+      cmp_res_to_bool
+      | "bool?" -> List.append [
+        Cmp  (Op_reg RAX, Op_immid bool_tag);
+      ]
+      cmp_res_to_bool
+      | "not" -> [
+        Xor (Op_reg RAX, Op_immid (1 lsl bool_shift))
+        ]
+      | _ -> raise (CompilationError "This cannot happen"))
+  in
+
+  match fname with
+  | Var(name) -> (match name with
+    | "inc" | "dec" | "zero?" | "not" 
+    | "null?" | "int?" | "bool?" -> gen_unar name args
+    | _ -> raise (CompilationError "Not implemented yet"))
+  | _ -> raise (CompilationError "Not implemented yet")
+
+and gen_expr = function
   | Literal (Fixnum num) -> gen_fixnum num
   | Literal (Boolean b)  -> gen_bool b
-  | Literal (Nil) -> gen_nil ()
+  | Literal (Nil)        -> gen_nil ()
+  | Call (fname, args)   -> gen_func_call fname args
   | _ -> raise (CompilationError "Not implemented yet")
 
 let gen_exprs (asts : exp list) =
