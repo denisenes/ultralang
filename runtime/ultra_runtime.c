@@ -13,7 +13,7 @@ void printValue(val v) {
 	} else if (is_nil(v)) {
 		printf("nil\n");
 	} else {
-		printf("Undefined type of value\n");
+		printf("Undefined type of value: %lld\n", v);
 	}
 }
 

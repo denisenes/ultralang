@@ -31,7 +31,7 @@ let emit (instr_seqs : instruction list list) out_file =
 
 let compiler () =
   (* Parse src *)
-  let asts = parse_from_file "test/sample.lsp" in
+  let asts = parse_from_file "test/add.lsp" in
   let _ = List.map 
     (fun ast -> let res = ast_to_string ast in print_endline res) 
     asts in

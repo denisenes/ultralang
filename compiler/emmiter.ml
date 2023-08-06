@@ -3,6 +3,8 @@ open Shared.Common
 open Common
 
 let emit_reg = function
+  | RSP -> "rsp" 
+  | RBP -> "rbp"
   | RAX -> "rax" | AL -> "al"
   | RBX -> "rbx"
   | RCX -> "rcx"
@@ -15,8 +17,10 @@ let emit_addr = function
   | Addr a -> (Printf.sprintf "%x" a)
 
 let emit_mem_ptr = function
-  | FromReg  reg  -> "[" ^ emit_reg reg   ^ "]"
-  | FromAddr addr -> "[" ^ emit_addr addr ^ "]"
+  | FromRegSubOff (reg, off) -> "QWORD PTR [" ^ emit_reg reg ^ "-" ^ string_of_int off ^ "]"
+  | FromRegAddOff (reg, off) -> "QWORD PTR [" ^ emit_reg reg ^ "+" ^ string_of_int off ^ "]"
+  | FromReg  reg             -> "QWORD PTR [" ^ emit_reg reg ^ "]"
+  | FromAddr addr            -> "QWORD PTR [" ^ emit_addr addr ^ "]"
 
 let emit_operand = function
   | Op_mem_ptr ptr -> emit_mem_ptr ptr
@@ -43,6 +47,12 @@ let emit_instr = function
     "or %s, %s" (emit_operand op1) (emit_operand op2)
   | Xor (op1, op2) -> Printf.sprintf
     "xor %s, %s" (emit_operand op1) (emit_operand op2)
+  | Push op -> (match op with
+    | Op_reg _ -> Printf.sprintf "push %s" (emit_operand op)
+    | _ -> raise (CompilationError "Wrong push operand"))
+  | Pop op -> (match op with
+    | Op_reg _ -> Printf.sprintf "pop %s" (emit_operand op)
+    | _ -> raise (CompilationError "Wrong pop operand"))
   | Ret -> "ret"
 
 let emit_instr_seq (instrs : instruction list) =

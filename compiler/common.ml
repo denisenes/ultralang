@@ -1,4 +1,8 @@
+let value_size = 8
+
 type int_register = 
+  RSP | 
+  RBP |
   RAX | EAX | AX | AL |
   RBX | EBX | BX | BL |
   RCX | ECX | CX | CL |
@@ -9,8 +13,10 @@ type int_register =
 type address = Addr of int
 
 type memory_ptr = 
-  FromReg  of int_register |
-  FromAddr of address
+  FromRegSubOff of int_register * int | (* [RSP - off] *)
+  FromRegAddOff of int_register * int | (* [RSP + off] *)
+  FromReg       of int_register       | (* [RSP] *)
+  FromAddr      of address              (* [0x123] *)
 
 type operand = 
   Op_mem_ptr of memory_ptr   | 
@@ -27,6 +33,8 @@ type instruction =
   | Sal  of operand * operand
   | Or   of operand * operand
   | Xor  of operand * operand
+  | Push of operand
+  | Pop  of operand
   | Ret
 
 let addr_of_int (v : int) = Addr v

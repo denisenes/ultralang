@@ -1,6 +1,7 @@
 open Shared.Common
 
 open Common
+open Stack
 
 let fixnum_tag = 0b00
 let fixnum_shift = 2
@@ -27,6 +28,17 @@ let gen_fixnum num =
 let gen_bool (b : bool) = 
   [Mov (Op_reg RAX, Op_immid (bool_to_immid b))]
 
+let gen_spilling reg = 
+  let _ = push_spilled_val() in
+  [
+    Sub (Op_reg RSP, Op_immid value_size);
+    Mov (Op_mem_ptr (FromReg RSP), Op_reg reg)
+  ]
+
+let gen_stack_remove_top () =
+  pop_spilled_val ();
+  [Add (Op_reg RSP, Op_immid value_size)]
+
 let rec gen_func_call fname args =
   let check_args_size args expected = 
     if List.length args = expected
@@ -38,9 +50,10 @@ let rec gen_func_call fname args =
     Sete (Op_reg AL);
     Sal  (Op_reg RAX, Op_immid bool_shift);
     Or   (Op_reg RAX, Op_immid bool_tag)
-  ] in
+  ] 
+  in
 
-  let  gen_unar name args = 
+  let gen_unar name args = 
     check_args_size args 1;
     let arg_evaluated = gen_expr (List.hd args) in
     List.append 
@@ -75,10 +88,30 @@ let rec gen_func_call fname args =
       | _ -> raise (CompilationError "This cannot happen"))
   in
 
+  let gen_bin_op name args =
+    check_args_size args 2;
+    let arg1_evaluated = gen_expr (List.hd args) in
+    let spilling = gen_spilling RAX in
+    let arg2_evaluated = gen_expr (List.nth args 1) in
+    let expr_evaluated = (match name with
+      | "+" -> [
+        Add (Op_reg RAX, Op_mem_ptr (FromReg RSP))
+      ]
+      | _ -> raise (CompilationError "Not implemented yet")) in
+    List.concat [
+      arg1_evaluated;
+      spilling;
+      arg2_evaluated;
+      expr_evaluated;
+      gen_stack_remove_top()
+    ]
+  in
+
   match fname with
   | Var(name) -> (match name with
     | "inc" | "dec" | "zero?" | "not" 
     | "null?" | "int?" | "bool?" -> gen_unar name args
+    | "+" -> gen_bin_op name args
     | _ -> raise (CompilationError "Not implemented yet"))
   | _ -> raise (CompilationError "Not implemented yet")
 
