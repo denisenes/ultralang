@@ -3,7 +3,7 @@ open Shared.Printer
 
 open Common
 open Codegen
-open Emmiter
+open Serializer
 
 let body = [
   Mov (Op_reg RAX, Op_immid 42); 
