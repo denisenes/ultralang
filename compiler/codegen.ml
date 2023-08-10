@@ -25,7 +25,7 @@ let gen_fixnum num =
   let tagged_num = fixnum_to_immid num in
   [Mov (Op_reg RAX, Op_immid tagged_num)]
 
-let gen_bool (b : bool) = 
+let gen_bool (b : bool) =
   [Mov (Op_reg RAX, Op_immid (bool_to_immid b))]
 
 let gen_spilling reg = 
@@ -97,11 +97,18 @@ let rec gen_func_call fname args =
       | "+" -> [
         Add (Op_reg RAX, Op_mem_ptr (FromReg RSP))
       ]
+      | "-" -> [
+        Sub (Op_reg RAX, Op_mem_ptr (FromReg RSP))
+      ]
+      | "*" -> [
+        Sar  (Op_mem_ptr (FromReg RSP), Op_immid fixnum_shift);
+        Imul (Op_reg RAX, Op_mem_ptr (FromReg RSP))
+      ]
       | _ -> raise (CompilationError "Not implemented yet")) in
     List.concat [
-      arg1_evaluated;
-      spilling;
       arg2_evaluated;
+      spilling;
+      arg1_evaluated;
       expr_evaluated;
       gen_stack_remove_top()
     ]
@@ -111,7 +118,7 @@ let rec gen_func_call fname args =
   | Var(name) -> (match name with
     | "inc" | "dec" | "zero?" | "not" 
     | "null?" | "int?" | "bool?" -> gen_unar name args
-    | "+" -> gen_bin_op name args
+    | "+" | "-" | "*" -> gen_bin_op name args
     | _ -> raise (CompilationError "Not implemented yet"))
   | _ -> raise (CompilationError "Not implemented yet")
 

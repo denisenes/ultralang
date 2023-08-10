@@ -23,15 +23,15 @@ let generate_prologue out_file : unit =
 
 let generate_epilogue out_file : unit = Printf.fprintf out_file "\n"
 
-let emit (instr_seqs : instruction list list) out_file =
+let serialize (instr_seqs : instruction list list) out_file =
   let body = List.fold_left
-    (fun b seq -> b ^ emit_instr_seq seq) ""  instr_seqs in
+    (fun b seq -> b ^ serialize_instr_seq seq) ""  instr_seqs in
   let entrypoint = generate_globl_func "ultra_entrypoint" body in
   Printf.fprintf out_file "%s\n" entrypoint
 
 let compiler () =
   (* Parse src *)
-  let asts = parse_from_file "test/add.lsp" in
+  let asts = parse_from_file "test/mul.lsp" in
   let _ = List.map 
     (fun ast -> let res = ast_to_string ast in print_endline res) 
     asts in
@@ -42,6 +42,6 @@ let compiler () =
   (* Emit instructions *)
   let out = open_out "runtime/ultra.s" in
   generate_prologue out;
-  emit instr_seqs out;
+  serialize instr_seqs out;
   generate_epilogue out;
   ();;

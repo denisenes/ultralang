@@ -2,7 +2,7 @@ open Shared.Common
 
 open Common
 
-let emit_reg = function
+let serialize_reg = function
   | RSP -> "rsp" 
   | RBP -> "rbp"
   | RAX -> "rax" | AL -> "al"
@@ -13,48 +13,52 @@ let emit_reg = function
   | RDI -> "rdi"
   | _ -> raise (CompilationError "Not implemented yet")
 
-let emit_addr = function
+let serialize_addr = function
   | Addr a -> (Printf.sprintf "%x" a)
 
-let emit_mem_ptr = function
-  | FromRegSubOff (reg, off) -> "QWORD PTR [" ^ emit_reg reg ^ "-" ^ string_of_int off ^ "]"
-  | FromRegAddOff (reg, off) -> "QWORD PTR [" ^ emit_reg reg ^ "+" ^ string_of_int off ^ "]"
-  | FromReg  reg             -> "QWORD PTR [" ^ emit_reg reg ^ "]"
-  | FromAddr addr            -> "QWORD PTR [" ^ emit_addr addr ^ "]"
+let serialize_mem_ptr = function
+  | FromRegSubOff (reg, off) -> "QWORD PTR [" ^ serialize_reg reg ^ "-" ^ string_of_int off ^ "]"
+  | FromRegAddOff (reg, off) -> "QWORD PTR [" ^ serialize_reg reg ^ "+" ^ string_of_int off ^ "]"
+  | FromReg  reg             -> "QWORD PTR [" ^ serialize_reg reg ^ "]"
+  | FromAddr addr            -> "QWORD PTR [" ^ serialize_addr addr ^ "]"
 
-let emit_operand = function
-  | Op_mem_ptr ptr -> emit_mem_ptr ptr
-  | Op_reg r -> emit_reg r
+let serialize_operand = function
+  | Op_mem_ptr ptr -> serialize_mem_ptr ptr
+  | Op_reg r -> serialize_reg r
   | Op_immid v -> string_of_int v
 
 (* TODO operands check *)
-let emit_instr = function
+let serialize_instr = function
   | Mov (op1, op2)  -> Printf.sprintf 
-    "mov %s, %s"  (emit_operand op1) (emit_operand op2)
+    "mov %s, %s"  (serialize_operand op1) (serialize_operand op2)
   | Add (op1, op2)  -> Printf.sprintf
-    "add %s, %s"  (emit_operand op1) (emit_operand op2)
+    "add %s, %s"  (serialize_operand op1) (serialize_operand op2)
   | Sub (op1, op2)  -> Printf.sprintf
-    "sub %s, %s"  (emit_operand op1) (emit_operand op2)
+    "sub %s, %s"  (serialize_operand op1) (serialize_operand op2)
+  | Imul (op1, op2)  -> Printf.sprintf
+    "imul %s, %s"  (serialize_operand op1) (serialize_operand op2)
   | Cmp (op1, op2)  -> Printf.sprintf
-    "cmp %s, %s"  (emit_operand op1) (emit_operand op2)
+    "cmp %s, %s"  (serialize_operand op1) (serialize_operand op2)
   | Test (op1, op2) -> Printf.sprintf
-    "test %s, %s" (emit_operand op1) (emit_operand op2)
+    "test %s, %s" (serialize_operand op1) (serialize_operand op2)
   | Sete op -> Printf.sprintf
-    "sete %s" (emit_operand op)
+    "sete %s" (serialize_operand op)
   | Sal (op1, op2) -> Printf.sprintf
-    "sal %s, %s" (emit_operand op1) (emit_operand op2)
+    "sal %s, %s" (serialize_operand op1) (serialize_operand op2)
+  | Sar (op1, op2) -> Printf.sprintf
+    "sar %s, %s" (serialize_operand op1) (serialize_operand op2)
   | Or (op1, op2) -> Printf.sprintf
-    "or %s, %s" (emit_operand op1) (emit_operand op2)
+    "or %s, %s" (serialize_operand op1) (serialize_operand op2)
   | Xor (op1, op2) -> Printf.sprintf
-    "xor %s, %s" (emit_operand op1) (emit_operand op2)
+    "xor %s, %s" (serialize_operand op1) (serialize_operand op2)
   | Push op -> (match op with
-    | Op_reg _ -> Printf.sprintf "push %s" (emit_operand op)
+    | Op_reg _ -> Printf.sprintf "push %s" (serialize_operand op)
     | _ -> raise (CompilationError "Wrong push operand"))
   | Pop op -> (match op with
-    | Op_reg _ -> Printf.sprintf "pop %s" (emit_operand op)
+    | Op_reg _ -> Printf.sprintf "pop %s" (serialize_operand op)
     | _ -> raise (CompilationError "Wrong pop operand"))
   | Ret -> "ret"
 
-let emit_instr_seq (instrs : instruction list) =
+let serialize_instr_seq (instrs : instruction list) =
   List.fold_left 
-    (fun acc instr -> acc ^ "\t" ^ emit_instr instr ^ "\n") "" instrs
+    (fun acc instr -> acc ^ "\t" ^ serialize_instr instr ^ "\n") "" instrs

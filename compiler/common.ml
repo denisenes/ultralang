@@ -27,10 +27,12 @@ type instruction =
   | Mov  of operand * operand
   | Add  of operand * operand
   | Sub  of operand * operand
+  | Imul of operand * operand
   | Test of operand * operand
   | Cmp  of operand * operand
   | Sete of operand
   | Sal  of operand * operand
+  | Sar  of operand * operand
   | Or   of operand * operand
   | Xor  of operand * operand
   | Push of operand
