@@ -3,6 +3,7 @@ open Common
 type stack = {
   mutable off : int; (* rsp = rbp + off *)
   mutable values : (string * int) list
+  (* TODO: stack of remembered rbp values *)
 }
 
 let global_stack : stack = { off=0; values=[] }

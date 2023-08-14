@@ -41,13 +41,11 @@ let gen_stack_remove_top () =
 
 let rec gen_func_call fname args =
   let check_args_size args expected = 
-    if List.length args = expected
-      then ()
-      else raise (CompilationError "Wrong args num in application")
+    assert (List.length args = expected)
   in
 
+  (* Expects 0 or 1 on RAX *)
   let cmp_res_to_bool = [
-    Sete (Op_reg AL);
     Sal  (Op_reg RAX, Op_immid bool_shift);
     Or   (Op_reg RAX, Op_immid bool_tag)
   ] 
@@ -65,23 +63,27 @@ let rec gen_func_call fname args =
       | "dec" -> [
         Sub (Op_reg RAX, Op_immid (fixnum_to_immid 1))
       ]
-      | "zero?" -> List.append [
+      | "zero?" -> [
         Test (Op_reg RAX, Op_reg RAX);
         Mov  (Op_reg RAX, Op_immid (fixnum_to_immid 0));
+        Sete (Op_reg AL);
       ] 
-      cmp_res_to_bool
-      | "null?" -> List.append [
+      @ cmp_res_to_bool
+      | "null?" -> [
         Cmp  (Op_reg RAX, Op_immid nil_tag);
+        Sete (Op_reg AL);
       ]
-      cmp_res_to_bool
-      | "int?" -> List.append [
+      @ cmp_res_to_bool
+      | "int?" -> [
         Cmp  (Op_reg RAX, Op_immid fixnum_tag);
+        Sete (Op_reg AL);
       ]
-      cmp_res_to_bool
-      | "bool?" -> List.append [
+      @ cmp_res_to_bool
+      | "bool?" -> [
         Cmp  (Op_reg RAX, Op_immid bool_tag);
+        Sete (Op_reg AL);
       ]
-      cmp_res_to_bool
+      @ cmp_res_to_bool
       | "not" -> [
         Xor (Op_reg RAX, Op_immid (1 lsl bool_shift))
         ]
@@ -104,6 +106,21 @@ let rec gen_func_call fname args =
         Sar  (Op_mem_ptr (FromReg RSP), Op_immid fixnum_shift);
         Imul (Op_reg RAX, Op_mem_ptr (FromReg RSP))
       ]
+      | "/" -> [ 
+        Cqo;
+        Idiv (Op_mem_ptr (FromReg RSP));
+        Sal (Op_reg RAX, Op_immid fixnum_shift)
+      ]
+      | "=" -> [
+        Cmp   (Op_reg RAX, Op_mem_ptr (FromReg RSP));
+        Sete (Op_reg AL);
+      ] 
+      @ cmp_res_to_bool
+      | ">" -> [
+        Cmp   (Op_reg RAX, Op_mem_ptr (FromReg RSP));
+        Setg (Op_reg AL);
+      ] 
+      @ cmp_res_to_bool
       | _ -> raise (CompilationError "Not implemented yet")) in
     List.concat [
       arg2_evaluated;
@@ -118,7 +135,7 @@ let rec gen_func_call fname args =
   | Var(name) -> (match name with
     | "inc" | "dec" | "zero?" | "not" 
     | "null?" | "int?" | "bool?" -> gen_unar name args
-    | "+" | "-" | "*" -> gen_bin_op name args
+    | "+" | "-" | "*" | "/" | "=" | ">" -> gen_bin_op name args
     | _ -> raise (CompilationError "Not implemented yet"))
   | _ -> raise (CompilationError "Not implemented yet")
 

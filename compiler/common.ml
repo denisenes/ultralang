@@ -19,24 +19,28 @@ type memory_ptr =
   FromAddr      of address              (* [0x123] *)
 
 type operand = 
-  Op_mem_ptr of memory_ptr   | 
+  Op_mem_ptr of memory_ptr   |
   Op_reg     of int_register |
   Op_immid   of int
 
 type instruction =
-  | Mov  of operand * operand
-  | Add  of operand * operand
-  | Sub  of operand * operand
-  | Imul of operand * operand
-  | Test of operand * operand
-  | Cmp  of operand * operand
-  | Sete of operand
-  | Sal  of operand * operand
-  | Sar  of operand * operand
-  | Or   of operand * operand
-  | Xor  of operand * operand
-  | Push of operand
-  | Pop  of operand
+  | Mov   of operand * operand
+  | Movzx of operand * operand
+  | Add   of operand * operand
+  | Sub   of operand * operand
+  | Imul  of operand * operand
+  | Idiv  of operand
+  | Test  of operand * operand
+  | Cmp   of operand * operand
+  | Sete  of operand
+  | Setg  of operand
+  | Sal   of operand * operand
+  | Sar   of operand * operand
+  | Or    of operand * operand
+  | Xor   of operand * operand
+  | Push  of operand
+  | Pop   of operand
+  | Cqo
   | Ret
 
 let addr_of_int (v : int) = Addr v

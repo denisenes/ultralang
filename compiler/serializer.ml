@@ -31,18 +31,24 @@ let serialize_operand = function
 let serialize_instr = function
   | Mov (op1, op2)  -> Printf.sprintf 
     "mov %s, %s"  (serialize_operand op1) (serialize_operand op2)
+  | Movzx (op1, op2)  -> Printf.sprintf 
+    "movzx %s, %s"  (serialize_operand op1) (serialize_operand op2)
   | Add (op1, op2)  -> Printf.sprintf
     "add %s, %s"  (serialize_operand op1) (serialize_operand op2)
   | Sub (op1, op2)  -> Printf.sprintf
     "sub %s, %s"  (serialize_operand op1) (serialize_operand op2)
   | Imul (op1, op2)  -> Printf.sprintf
     "imul %s, %s"  (serialize_operand op1) (serialize_operand op2)
+  | Idiv op -> Printf.sprintf
+    "idiv %s" (serialize_operand op)
   | Cmp (op1, op2)  -> Printf.sprintf
     "cmp %s, %s"  (serialize_operand op1) (serialize_operand op2)
   | Test (op1, op2) -> Printf.sprintf
     "test %s, %s" (serialize_operand op1) (serialize_operand op2)
   | Sete op -> Printf.sprintf
     "sete %s" (serialize_operand op)
+  | Setg op -> Printf.sprintf
+    "setg %s" (serialize_operand op)
   | Sal (op1, op2) -> Printf.sprintf
     "sal %s, %s" (serialize_operand op1) (serialize_operand op2)
   | Sar (op1, op2) -> Printf.sprintf
@@ -57,6 +63,7 @@ let serialize_instr = function
   | Pop op -> (match op with
     | Op_reg _ -> Printf.sprintf "pop %s" (serialize_operand op)
     | _ -> raise (CompilationError "Wrong pop operand"))
+  | Cqo -> "cqo"
   | Ret -> "ret"
 
 let serialize_instr_seq (instrs : instruction list) =
