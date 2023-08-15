@@ -27,42 +27,53 @@ let serialize_operand = function
   | Op_reg r -> serialize_reg r
   | Op_immid v -> string_of_int v
 
-(* TODO operands check *)
+(* TODO operands check according to x64 spec *)
 let serialize_instr = function
-  | Mov (op1, op2)  -> Printf.sprintf 
-    "mov %s, %s"  (serialize_operand op1) (serialize_operand op2)
-  | Movzx (op1, op2)  -> Printf.sprintf 
-    "movzx %s, %s"  (serialize_operand op1) (serialize_operand op2)
-  | Add (op1, op2)  -> Printf.sprintf
-    "add %s, %s"  (serialize_operand op1) (serialize_operand op2)
-  | Sub (op1, op2)  -> Printf.sprintf
-    "sub %s, %s"  (serialize_operand op1) (serialize_operand op2)
-  | Imul (op1, op2)  -> Printf.sprintf
-    "imul %s, %s"  (serialize_operand op1) (serialize_operand op2)
-  | Idiv op -> Printf.sprintf
-    "idiv %s" (serialize_operand op)
-  | Cmp (op1, op2)  -> Printf.sprintf
-    "cmp %s, %s"  (serialize_operand op1) (serialize_operand op2)
-  | Test (op1, op2) -> Printf.sprintf
-    "test %s, %s" (serialize_operand op1) (serialize_operand op2)
-  | Sete op -> Printf.sprintf
-    "sete %s" (serialize_operand op)
-  | Setg op -> Printf.sprintf
-    "setg %s" (serialize_operand op)
-  | Sal (op1, op2) -> Printf.sprintf
-    "sal %s, %s" (serialize_operand op1) (serialize_operand op2)
-  | Sar (op1, op2) -> Printf.sprintf
-    "sar %s, %s" (serialize_operand op1) (serialize_operand op2)
-  | Or (op1, op2) -> Printf.sprintf
-    "or %s, %s" (serialize_operand op1) (serialize_operand op2)
-  | Xor (op1, op2) -> Printf.sprintf
-    "xor %s, %s" (serialize_operand op1) (serialize_operand op2)
-  | Push op -> (match op with
-    | Op_reg _ -> Printf.sprintf "push %s" (serialize_operand op)
-    | _ -> raise (CompilationError "Wrong push operand"))
-  | Pop op -> (match op with
-    | Op_reg _ -> Printf.sprintf "pop %s" (serialize_operand op)
-    | _ -> raise (CompilationError "Wrong pop operand"))
+  | Mov (op1, op2)  -> 
+    assert (not @@ op_is_immid op1);
+    Printf.sprintf "mov %s, %s"  (serialize_operand op1) (serialize_operand op2)
+  | Movzx (op1, op2)  -> 
+    assert (not @@ op_is_immid op1);
+    Printf.sprintf "movzx %s, %s"  (serialize_operand op1) (serialize_operand op2)
+  | Add (op1, op2)  -> 
+    assert (not @@ op_is_immid op1);
+    Printf.sprintf "add %s, %s"  (serialize_operand op1) (serialize_operand op2)
+  | Sub (op1, op2)  -> 
+    assert (not @@ op_is_immid op1);
+    Printf.sprintf "sub %s, %s"  (serialize_operand op1) (serialize_operand op2)
+  | Imul (op1, op2)  -> 
+    assert (not @@ op_is_immid op1);
+    Printf.sprintf "imul %s, %s"  (serialize_operand op1) (serialize_operand op2)
+  | Idiv op -> 
+    Printf.sprintf "idiv %s" (serialize_operand op)
+  | Cmp (op1, op2)  -> 
+    Printf.sprintf "cmp %s, %s"  (serialize_operand op1) (serialize_operand op2)
+  | Test (op1, op2) -> 
+    Printf.sprintf "test %s, %s" (serialize_operand op1) (serialize_operand op2)
+  | Sete op -> 
+    assert (op_is_reg8 op);
+    Printf.sprintf "sete %s" (serialize_operand op)
+  | Setg op -> 
+    assert (op_is_reg8 op);
+    Printf.sprintf "setg %s" (serialize_operand op)
+  | Sal (op1, op2) -> 
+    assert (not @@ op_is_immid op1);
+    Printf.sprintf "sal %s, %s" (serialize_operand op1) (serialize_operand op2)
+  | Sar (op1, op2) -> 
+    assert (not @@ op_is_immid op1);
+    Printf.sprintf "sar %s, %s" (serialize_operand op1) (serialize_operand op2)
+  | Or (op1, op2) -> 
+    assert (not @@ op_is_immid op1);
+    Printf.sprintf "or %s, %s" (serialize_operand op1) (serialize_operand op2)
+  | Xor (op1, op2) -> 
+    assert (not @@ op_is_immid op1);
+    Printf.sprintf "xor %s, %s" (serialize_operand op1) (serialize_operand op2)
+  | Push op ->
+    assert (op_is_reg op);
+    Printf.sprintf "push %s" (serialize_operand op)
+  | Pop op -> 
+    assert (op_is_reg op);
+    Printf.sprintf "pop %s" (serialize_operand op)
   | Cqo -> "cqo"
   | Ret -> "ret"
 

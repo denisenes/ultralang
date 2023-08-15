@@ -105,6 +105,9 @@ and eval_expr expr env =
     | Call (Var "env", []) -> print_env env; Boolean true
     | Call (expr, exprs) -> eval_apply (eval_expr' expr) (List.map eval_expr' exprs)
     | Lambda (args, body) -> Closure (args, body, env)
+    | Let (var_name, var_val, body) -> 
+      let env' = bind (var_name, eval_expr' var_val, env) in
+      eval_expr body env'
     | Defexp _ -> raise (EvaluationError "This can't happen")
   in eval_expr' expr 
 

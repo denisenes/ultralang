@@ -175,6 +175,8 @@ and build_ast (sexpr : value) : exp =
       let err () = raise (SyntaxError "(fn name (arguments) body)") in
       let names = List.map (function Symbol s -> s | _ -> err ()) (list_of_pairs args) in
       Defexp (FnDef (name, names, build_ast body))
+    | [Symbol "let"; Symbol var_name; var_val; body] ->
+      Let (var_name, build_ast var_val, build_ast body)
     | [Symbol "apply"; fnexp; args] ->
       Apply (build_ast fnexp, build_ast args)
     | fnexp::args -> Call (build_ast fnexp, List.map build_ast args)

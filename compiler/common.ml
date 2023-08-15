@@ -47,3 +47,19 @@ let addr_of_int (v : int) = Addr v
 
 let addr_add_offset (off : int) = function
   | Addr addr -> Addr (addr + off)
+
+let op_is_immid = function
+  | Op_immid _ -> true
+  | _ -> false
+
+let op_is_reg = function
+  | Op_reg _ -> true
+  | _ -> false
+
+let op_is_reg8 = function
+  | Op_reg AL | Op_reg BL | Op_reg CL | Op_reg DL -> true
+  | _ -> false
+
+let op_is_mem_ptr = function
+  | Op_mem_ptr _ -> true
+  | _ -> false

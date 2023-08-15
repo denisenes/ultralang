@@ -1,7 +1,6 @@
 open Shared.Common
 
 open Common
-open Stack
 
 let fixnum_tag = 0b00
 let fixnum_shift = 2
@@ -29,15 +28,24 @@ let gen_bool (b : bool) =
   [Mov (Op_reg RAX, Op_immid (bool_to_immid b))]
 
 let gen_spilling reg = 
-  let _ = push_spilled_val() in
+  let _ = Stack.push() in
   [
     Sub (Op_reg RSP, Op_immid value_size);
     Mov (Op_mem_ptr (FromReg RSP), Op_reg reg)
   ]
 
 let gen_stack_remove_top () =
-  pop_spilled_val ();
+  Stack.pop();
   [Add (Op_reg RSP, Op_immid value_size)]
+
+let gen_loc_var_getter name =
+  let variable_location = Stack.get_local_var_offset name in
+  match variable_location with
+  | Some offset ->
+    [
+      Mov (Op_reg RAX, Op_mem_ptr (FromRegSubOff (RBP, offset)))
+    ]
+  | None -> raise (CompilationError ("Undefined symbol " ^ name))
 
 let rec gen_func_call fname args =
   let check_args_size args expected = 
@@ -139,13 +147,48 @@ let rec gen_func_call fname args =
     | _ -> raise (CompilationError "Not implemented yet"))
   | _ -> raise (CompilationError "Not implemented yet")
 
+and gen_let_expr (name : name) (value : exp) (body : exp) =
+  let val_evaluated  = gen_expr value    in
+  let _ = Stack.push_local_variable name in
+  let prologue = val_evaluated @ (* Result is located in RAX *)
+    [
+      Sub (Op_reg RSP, Op_immid value_size);
+      Mov (Op_mem_ptr (FromReg RSP), Op_reg RAX)
+    ]
+  in 
+  let body_evaluated = 
+    assert (Option.is_some @@ Stack.get_local_var_offset name);
+    gen_expr body
+  in
+  let _ = Stack.pop() in
+  let epilogue = 
+    [
+      Add (Op_reg RSP, Op_immid value_size)
+    ] 
+  in
+  prologue @ body_evaluated @ epilogue
+
 and gen_expr = function
+  | Var name -> gen_loc_var_getter name
   | Literal (Fixnum num) -> gen_fixnum num
   | Literal (Boolean b)  -> gen_bool b
   | Literal (Nil)        -> gen_nil ()
   | Call (fname, args)   -> gen_func_call fname args
+  | Let (name, value, body) -> gen_let_expr name value body
   | _ -> raise (CompilationError "Not implemented yet")
+
+let gen_func_prologue =
+  [
+    Push (Op_reg RBP);
+    Mov (Op_reg RBP, Op_reg RSP)
+  ]
+
+let gen_func_epilogue =
+  [
+    Pop (Op_reg RBP);
+    Ret
+  ]
 
 let gen_exprs (asts : exp list) =
   let res = List.map (fun ast -> gen_expr ast) asts in
-  res @ [[Ret]]
+  [gen_func_prologue] @ res @ [gen_func_epilogue]

@@ -28,7 +28,7 @@ let serialize (instr_seqs : instruction list list) out_file =
 
 let compiler () =
   (* Parse src *)
-  let asts = parse_from_file "test/gtInt.lsp" in
+  let asts = parse_from_file "test/let2.lsp" in
   let _ = List.map 
     (fun ast -> let res = Shared.Printer.ast_to_string ast in print_endline res) 
     asts in

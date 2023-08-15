@@ -27,6 +27,7 @@ let rec ast_to_string (node : exp) : string =
     let string_args = (String.concat " " (List.map ast_to_string args)) in
     "(Node<Call> " ^ ast_to_string func ^ " " ^ string_args ^ ")"
   | Lambda (args, body) -> "(Node<Lambda> " ^ args_to_string args ^ ast_to_string body ^ ")"
+  | Let (var_name, var_val, body) -> "(Node<Let> " ^ var_name ^ " " ^ ast_to_string var_val ^ " " ^ ast_to_string body ^ ")"
   | Defexp(Val(name, e)) -> "(Node<Val> " ^ name ^ " " ^ ast_to_string e ^ ")"
   | Defexp(Exp exp) -> ast_to_string exp
   | Defexp(FnDef(name, arg_names, body)) ->"(Node<FnDef> " ^ name ^ " " ^ args_to_string arg_names ^ ast_to_string body ^ ")"

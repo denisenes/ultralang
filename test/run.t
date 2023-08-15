@@ -112,6 +112,12 @@ Define
   $ ${INTERPRETER} "(fn inc (x) (+ x 1)) (inc 10)"
   11
 
+Let
+  $ ${INTERPRETER} "(let x 123 (+ x 123))"
+  246
+  $ ${INTERPRETER} "(let x (* 10 10) (let y (/ 1000 2) (+ x y)))"
+  600
+
 Factorial
   $ ${INTERPRETER} "$(cat fact.lsp)"
   3628800

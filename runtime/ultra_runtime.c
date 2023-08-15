@@ -17,7 +17,7 @@ void printValue(val v) {
 	}
 }
 
-// located int ultra.s
+// located in ultra.s
 extern int ultra_entrypoint();
 
 int main(int argc, char ** argv) {

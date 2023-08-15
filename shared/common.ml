@@ -14,14 +14,15 @@ and value = lobject
 and name  = string
 and exp   =
     | Literal of value
-    | Var of name
-    | If of exp * exp * exp
-    | And of exp * exp
-    | Or  of exp * exp
-    | Apply of exp * exp
-    | Call of exp * exp list
-    | Lambda of name list * exp
-    | Defexp of def
+    | Var     of name
+    | If      of exp * exp * exp
+    | And     of exp * exp
+    | Or      of exp * exp
+    | Let     of name * exp * exp
+    | Apply   of exp * exp
+    | Call    of exp * exp list
+    | Lambda  of name list * exp
+    | Defexp  of def
 
 and def = 
     | Val   of name * exp
