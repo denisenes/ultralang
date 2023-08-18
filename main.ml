@@ -9,5 +9,5 @@ let () =
       match Sys.argv.(1) with
         | "test" -> executor Sys.argv.(2)
         | "repl" -> repl_starter()
-        | "compile" -> compiler()
+        | "compile" -> compiler Sys.argv.(2)
         | _      -> failwith "Execution mode is wrong (repl|compile|test)"

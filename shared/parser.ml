@@ -188,10 +188,13 @@ and build_ast (sexpr : value) : exp =
 let read_src_from_file filename =
   Core.In_channel.read_all filename
 
-let parse_from_file filename : exp list =
-  let src = read_src_from_file filename in
+let parse_from_string src : exp list =
   let sr = constr_string_reader src in
   let stream = new_input_stream sr in
   let exprs = read_sexprs stream in
   let asts = List.map (fun e -> build_ast e) exprs in
   asts
+
+let parse_from_file filename : exp list =
+  let src = read_src_from_file filename in
+  parse_from_string src

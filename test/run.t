@@ -121,11 +121,3 @@ Let
 Factorial
   $ ${INTERPRETER} "$(cat fact.lsp)"
   3628800
-
-=================================================
-COMPILER TESTS
-=================================================
-
-  $ export COMPILER="./main.exe compile"
-
-Integers
