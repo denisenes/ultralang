@@ -75,21 +75,25 @@ let rec gen_func_call fname args =
         Test (Op_reg RAX, Op_reg RAX);
         Mov  (Op_reg RAX, Op_immid (fixnum_to_immid 0));
         Sete (Op_reg AL);
+        Movzx (Op_reg RAX, Op_reg AL)
       ] 
       @ cmp_res_to_bool
       | "null?" -> [
         Cmp  (Op_reg RAX, Op_immid nil_tag);
         Sete (Op_reg AL);
+        Movzx (Op_reg RAX, Op_reg AL)
       ]
       @ cmp_res_to_bool
       | "int?" -> [
         Cmp  (Op_reg RAX, Op_immid fixnum_tag);
         Sete (Op_reg AL);
+        Movzx (Op_reg RAX, Op_reg AL)
       ]
       @ cmp_res_to_bool
       | "bool?" -> [
         Cmp  (Op_reg RAX, Op_immid bool_tag);
         Sete (Op_reg AL);
+        Movzx (Op_reg RAX, Op_reg AL)
       ]
       @ cmp_res_to_bool
       | "not" -> [
@@ -121,12 +125,14 @@ let rec gen_func_call fname args =
       ]
       | "=" -> [
         Cmp   (Op_reg RAX, Op_mem_ptr (FromReg RSP));
-        Sete (Op_reg AL);
+        Sete  (Op_reg AL);
+        Movzx (Op_reg RAX, Op_reg AL)
       ] 
       @ cmp_res_to_bool
       | ">" -> [
         Cmp   (Op_reg RAX, Op_mem_ptr (FromReg RSP));
         Setg (Op_reg AL);
+        Movzx (Op_reg RAX, Op_reg AL)
       ] 
       @ cmp_res_to_bool
       | _ -> raise (CompilationError "Not implemented yet")) in
@@ -168,11 +174,32 @@ and gen_let_expr (name : name) (value : exp) (body : exp) =
   in
   prologue @ body_evaluated @ epilogue
 
+and gen_if_expr (cond : exp) (exp_true : exp) (exp_false : exp) =
+  let cond_evaluated      = gen_expr cond      in
+  let exp_true_evaluated  = gen_expr exp_true  in
+  let exp_false_evaluated = gen_expr exp_false in
+  let label1 = Stack.alloc_label_id() in
+  let label2 = Stack.alloc_label_id() in
+  cond_evaluated
+  @
+  [ Cmp (Op_reg RAX, Op_immid (bool_to_immid false));
+    Je  (Op_label label1) ]
+  @
+  exp_true_evaluated
+  @
+  [ Jmp (Op_label label2);
+    Label label1 ]
+  @
+  exp_false_evaluated
+  @
+  [ Label label2 ]
+
 and gen_expr = function
   | Var name -> gen_loc_var_getter name
   | Literal (Fixnum num) -> gen_fixnum num
   | Literal (Boolean b)  -> gen_bool b
   | Literal (Nil)        -> gen_nil ()
+  | If (cond, exp_true, exp_false) -> gen_if_expr cond exp_true exp_false
   | Call (fname, args)   -> gen_func_call fname args
   | Let (name, value, body) -> gen_let_expr name value body
   | _ -> raise (CompilationError "Not implemented yet")

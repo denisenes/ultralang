@@ -21,7 +21,8 @@ type memory_ptr =
 type operand = 
   Op_mem_ptr of memory_ptr   |
   Op_reg     of int_register |
-  Op_immid   of int
+  Op_immid   of int          |
+  Op_label   of int
 
 type instruction =
   | Mov   of operand * operand
@@ -40,8 +41,11 @@ type instruction =
   | Xor   of operand * operand
   | Push  of operand
   | Pop   of operand
+  | Je    of operand
+  | Jmp   of operand
   | Cqo
   | Ret
+  | Label of int (* not actually instruction, think about *)
 
 let addr_of_int (v : int) = Addr v
 
@@ -62,4 +66,8 @@ let op_is_reg8 = function
 
 let op_is_mem_ptr = function
   | Op_mem_ptr _ -> true
+  | _ -> false
+
+let op_is_label = function
+  | Op_label _ -> true
   | _ -> false

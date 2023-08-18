@@ -24,8 +24,9 @@ let serialize_mem_ptr = function
 
 let serialize_operand = function
   | Op_mem_ptr ptr -> serialize_mem_ptr ptr
-  | Op_reg r -> serialize_reg r
-  | Op_immid v -> string_of_int v
+  | Op_reg r       -> serialize_reg r
+  | Op_immid v     -> string_of_int v
+  | Op_label id    -> Printf.sprintf "L%d" id
 
 (* TODO operands check according to x64 spec *)
 let serialize_instr = function
@@ -74,9 +75,20 @@ let serialize_instr = function
   | Pop op -> 
     assert (op_is_reg op);
     Printf.sprintf "pop %s" (serialize_operand op)
+  | Je op -> 
+    assert (op_is_label op);
+    Printf.sprintf "je %s" (serialize_operand op)
+  | Jmp op -> 
+    assert (op_is_label op);
+    Printf.sprintf "jmp %s" (serialize_operand op)
   | Cqo -> "cqo"
   | Ret -> "ret"
+  | Label id -> Printf.sprintf "L%d:" id
 
 let serialize_instr_seq (instrs : instruction list) =
+  let ident = function
+  | Label _ -> ""
+  | _ -> "\t" 
+  in
   List.fold_left 
-    (fun acc instr -> acc ^ "\t" ^ serialize_instr instr ^ "\n") "" instrs
+    (fun acc instr -> acc ^ (ident instr) ^ serialize_instr instr ^ "\n") "" instrs
