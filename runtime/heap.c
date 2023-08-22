@@ -23,10 +23,10 @@ static inline void moveBumpPtr(size_t offset) {
 }
 
 Heap* heapInit() {
-    size_t* h_ptr = (size_t *) ((size_t) HEAP_SIZE);
+    size_t* h_ptr = (size_t*) malloc((size_t) HEAP_SIZE);
     Heap* heap = (Heap*) malloc(sizeof(Heap));
 
-    if (heap == NULL || heap == NULL) {
+    if (heap == NULL || h_ptr == NULL) {
         fatal("Cannot initialize heap");
     }
     heapPtr = heap;
