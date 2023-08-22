@@ -1,26 +1,15 @@
-#include <stdio.h>
-#include "types.h"
+#include "ultra_runtime.h"
+#include "printer.h"
 
-void printValue(val v) {
-	if (is_fixnum(v)) {
-		printf("%lld\n", fixnum_to_int(v));
-	} else if (is_bool(v)) {
-		if (bool_to_int(v)) {
-			printf("#t\n");
-		} else {
-			printf("#f\n");
-		} 
-	} else if (is_nil(v)) {
-		printf("nil\n");
-	} else {
-		printf("Undefined type of value: %lld\n", v);
-	}
+Globals globals;
+
+void runtimePreparation() {
+	globals.heap = heapInit();
 }
 
-// located in ultra.s
-extern int ultra_entrypoint();
-
 int main(int argc, char ** argv) {
+	runtimePreparation();
+
 	printValue(ultra_entrypoint());
 	return 0;
 }
