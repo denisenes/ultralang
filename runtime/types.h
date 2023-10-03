@@ -31,4 +31,4 @@ typedef QWORD val;
 #define cons_tag   0b00000001
 #define cons_shift 3
 #define is_cons(v) ((v & cons_mask) == cons_tag)
-
+#define tagged_cons(v) (v | cons_tag)

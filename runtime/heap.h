@@ -2,10 +2,15 @@
 
 #include <malloc.h>
 #include <stdint.h>
+#include <stdarg.h>
+#include <assert.h>
+#include <inttypes.h>
 
 #include "types.h"
 
 #define HEAP_SIZE 104857600 // 100 Mb
+
+#define HEAP_ALIGNMENT 8
 
 /*  Current heap layout:
  *  ====================================================
@@ -15,11 +20,24 @@
  */  
 
 typedef struct Heap {
-    size_t* heap_start;
-    size_t   bump_ptr;
-    size_t* heap_end;
+    uint8_t  bump_ptr;
+    uint8_t* heap_start;
+    uint8_t* heap_end;
 } Heap;
 
+typedef enum ObjType {
+    CONS,
+    CLOSURE,
+    STRING,
+    ARRAY
+} ObjType;
+
+/*
+ * TAGS:
+ * BIT1, BIT2 -> type
+ * 
+ * BIT3 -> markbit
+ */
 typedef struct ObjHeader {
     uint8_t tags;
     uint8_t sizebyte1;
@@ -27,7 +45,7 @@ typedef struct ObjHeader {
     uint8_t sizebyte3;
 } ObjHeader;
 
-#pragma pack (4)
+#pragma pack (8)
 typedef struct ConsObj {
     ObjHeader header;
     val       car;
@@ -35,4 +53,10 @@ typedef struct ConsObj {
 } ConsObj;
 
 Heap* heapInit();
+
 val   heapAllocCons(val car, val cdr);
+val   heapCar(val cons);
+val   heapCdr(val cons);
+
+void dumpInit();
+void dumpHeap();

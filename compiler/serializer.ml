@@ -3,24 +3,24 @@ open Shared.Common
 open Common
 
 let serialize_reg = function
-  | RSP -> "rsp" 
-  | RBP -> "rbp"
-  | RAX -> "rax" | AL -> "al"
-  | RBX -> "rbx"
-  | RCX -> "rcx"
-  | RDX -> "rdx"
-  | RSI -> "rsi"
-  | RDI -> "rdi"
+  | `RSP -> "rsp" 
+  | `RBP -> "rbp"
+  | `RAX -> "rax" | `AL -> "al"
+  | `RBX -> "rbx"
+  | `RCX -> "rcx"
+  | `RDX -> "rdx"
+  | `RSI -> "rsi"
+  | `RDI -> "rdi"
   | _ -> raise (CompilationError "Not implemented yet")
 
 let serialize_addr = function
-  | Addr a -> (Printf.sprintf "%x" a)
+  | `Addr a -> (Printf.sprintf "%x" a)
 
 let serialize_mem_ptr = function
-  | FromRegSubOff (reg, off) -> "QWORD PTR [" ^ serialize_reg reg ^ "-" ^ string_of_int off ^ "]"
-  | FromRegAddOff (reg, off) -> "QWORD PTR [" ^ serialize_reg reg ^ "+" ^ string_of_int off ^ "]"
-  | FromReg  reg             -> "QWORD PTR [" ^ serialize_reg reg ^ "]"
-  | FromAddr addr            -> "QWORD PTR [" ^ serialize_addr addr ^ "]"
+  | FromPlaceSubOff (reg, off)       -> "QWORD PTR [" ^ serialize_reg reg ^ "-" ^ string_of_int off ^ "]"
+  | FromPlaceAddOff (reg, off)       -> "QWORD PTR [" ^ serialize_reg reg ^ "+" ^ string_of_int off ^ "]"
+  | FromPlace (#int_register as reg) -> "QWORD PTR [" ^ serialize_reg reg ^ "]"
+  | FromPlace (#address as addr)     -> "QWORD PTR [" ^ serialize_addr addr ^ "]"
 
 let serialize_operand = function
   | Op_mem_ptr ptr -> serialize_mem_ptr ptr
@@ -81,6 +81,8 @@ let serialize_instr = function
   | Jmp op -> 
     assert (op_is_label op);
     Printf.sprintf "jmp %s" (serialize_operand op)
+  | Call func ->
+    Printf.sprintf "call %s" func
   | Cqo -> "cqo"
   | Ret -> "ret"
   | Label id -> Printf.sprintf "L%d:" id
