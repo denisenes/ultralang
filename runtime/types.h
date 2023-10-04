@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-typedef uint64_t QWORD;
+typedef int64_t QWORD;
 
 /*
  * We assume that runtime is compiled for platform where

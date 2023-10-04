@@ -45,6 +45,9 @@ let serialize_instr = function
   | Imul (op1, op2)  -> 
     assert (not @@ op_is_immid op1);
     Printf.sprintf "imul %s, %s"  (serialize_operand op1) (serialize_operand op2)
+  | And (op1, op2) ->
+    assert (not @@ op_is_immid op1);
+    Printf.sprintf "and %s, %s"  (serialize_operand op1) (serialize_operand op2)
   | Idiv op -> 
     Printf.sprintf "idiv %s" (serialize_operand op)
   | Cmp (op1, op2)  -> 

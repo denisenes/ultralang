@@ -2,6 +2,7 @@ open Shared.Common
 
 open Common
 
+let fixnum_mask = 0b11
 let fixnum_tag = 0b00
 let fixnum_shift = 2
 let fixnum_to_immid num = (num lsl fixnum_shift) lor fixnum_tag
@@ -88,12 +89,14 @@ let rec gen_func_call fname args =
       ]
       @ cmp_res_to_bool
       | "int?" -> [
+        And   (Op_reg `RAX, Op_immid fixnum_mask);
         Cmp   (Op_reg `RAX, Op_immid fixnum_tag);
         Sete  (Op_reg `AL);
         Movzx (Op_reg `RAX, Op_reg `AL)
       ]
       @ cmp_res_to_bool
       | "bool?" -> [
+        And   (Op_reg `RAX, Op_immid bool_mask);
         Cmp   (Op_reg `RAX, Op_immid bool_tag);
         Sete  (Op_reg `AL);
         Movzx (Op_reg `RAX, Op_reg `AL)

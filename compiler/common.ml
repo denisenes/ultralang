@@ -34,6 +34,7 @@ type instruction =
   | Add   of operand * operand
   | Sub   of operand * operand
   | Imul  of operand * operand
+  | And   of operand * operand
   | Idiv  of operand
   | Test  of operand * operand
   | Cmp   of operand * operand

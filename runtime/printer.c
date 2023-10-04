@@ -11,7 +11,7 @@ void printCons(val v) {
 
 void printValue(val v) {
 	if (is_fixnum(v)) {
-		printf("%lld\n", (long long) fixnum_to_int(v));
+		printf("%"PRId64"\n", ((int64_t) fixnum_to_int(v)));
 	} else if (is_bool(v)) {
 		if (bool_to_int(v)) {
 			printf("#t\n");
