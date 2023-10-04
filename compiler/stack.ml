@@ -5,15 +5,16 @@ open Shared.Common
 type frame_descriptor = {
   mutable rsp_offset    : int; (* rsp = rbp + offset *)
   mutable values        : (string * int) list;
-  mutable label_counter : int
+  mutable label_counter : int;
+  args                  : name list
 }
 
 type abstract_stack = frame_descriptor list
 
 let global_stack : abstract_stack ref = ref []
 
-let create_new_frame () : unit =
-  let new_frame = { rsp_offset=0; values=[]; label_counter=0 } in
+let create_new_frame args : unit =
+  let new_frame = { rsp_offset=0; values=[]; label_counter=0; args } in
   global_stack := new_frame::!global_stack
 
 let push () = 

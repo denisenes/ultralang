@@ -180,7 +180,7 @@ let rec gen_func_call fname args =
     | "null?" | "int?" | "bool?" -> gen_unar name args
     | "+" | "-" | "*" | "/" | "=" | ">" -> gen_bin_op name args
     | "cons" -> gen_func_call' "ULTRA_cons" args
-    | _ -> raise (CompilationError "Not implemented yet"))
+    | name -> gen_func_call' name args)
   | _ -> raise (CompilationError "Not implemented yet")
 
 and gen_let_expr (name : name) (value : exp) (body : exp) =
@@ -224,6 +224,16 @@ and gen_if_expr (cond : exp) (exp_true : exp) (exp_false : exp) =
   @
   [ Label label2 ]
 
+and gen_function (name : name) (args : name list) (ast : exp) ~global : unit = 
+  let instrs = gen_expr ast in
+  Funcmap.add_func name instrs global;
+  Stack.create_new_frame args;
+
+and gen_def_expr (defexpr : def) : unit = 
+  match defexpr with 
+  | FnDef (name, args, body) -> gen_function name args body ~global:false
+  | _ -> raise (CompilationError "Not implemented yet")
+
 and gen_expr = function
   | Var name -> gen_loc_var_getter name
   | Literal (Fixnum num) -> gen_fixnum num
@@ -232,6 +242,7 @@ and gen_expr = function
   | If (cond, exp_true, exp_false) -> gen_if_expr cond exp_true exp_false
   | Call (fname, args)   -> gen_func_call fname args
   | Let (name, value, body) -> gen_let_expr name value body
+  | Defexp def -> gen_def_expr def; []
   | _ -> raise (CompilationError "Not implemented yet")
 
 let gen_func_prologue =
@@ -246,6 +257,10 @@ let gen_func_epilogue =
     Ret
   ]
 
-let gen_exprs (asts : exp list) =
-  let res = List.map (fun ast -> gen_expr ast) asts in
-  [gen_func_prologue] @ res @ [gen_func_epilogue]
+let gen_highelevel_exprs (asts : exp list) : unit =
+  Stack.create_new_frame [];
+  let res = List.fold_left (fun acc ast -> (gen_expr ast) @ acc) [] asts in
+  let main_body =
+    gen_func_prologue @ res @ gen_func_epilogue
+  in
+  Funcmap.add_func "ultra_entrypoint" main_body true

@@ -36,3 +36,7 @@ let rec list_of_pairs' sexpr acc =
 
 let list_of_pairs (sexpr : value) : value list = 
   list_of_pairs' sexpr []
+
+let pretty_bool = function
+  | true  -> "true"
+  | false -> "false"

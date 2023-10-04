@@ -97,3 +97,23 @@ let serialize_instr_seq (instrs : instruction list) =
   in
   List.fold_left 
     (fun acc instr -> acc ^ (ident instr) ^ serialize_instr instr ^ "\n") "" instrs
+
+let serialize_globl_func name body =
+  ".global " ^ name ^ "\n" ^
+  "\t.type " ^ name ^ ", @function\n" ^
+  name ^ ":\n" ^ body
+
+let serialize_private_func name body =
+  name ^ ":\n" ^ body
+
+let serialize_func name body is_global = 
+  let body_serialized = serialize_instr_seq body in
+  match is_global with
+  | true -> serialize_globl_func name body_serialized
+  | false -> serialize_private_func name body_serialized
+
+let serialize_all () = 
+  List.fold_left (fun acc (fname, instrs, is_global) ->
+    let func_serialized = serialize_func fname instrs is_global in
+    func_serialized ^ acc
+  ) "" !Funcmap.func_map
