@@ -95,16 +95,16 @@ let serialize_instr_seq (instrs : instruction list) =
   | Label _ -> ""
   | _ -> "\t" 
   in
-  List.fold_left 
+  List.fold_left
     (fun acc instr -> acc ^ (ident instr) ^ serialize_instr instr ^ "\n") "" instrs
 
 let serialize_globl_func name body =
   ".global " ^ name ^ "\n" ^
-  "\t.type " ^ name ^ ", @function\n" ^
-  name ^ ":\n" ^ body
+  ".type " ^ name ^ ", @function\n" ^
+  name ^ ":\n" ^ body ^ "\n"
 
 let serialize_private_func name body =
-  name ^ ":\n" ^ body
+  name ^ ":\n" ^ body ^ "\n"
 
 let serialize_func name body is_global = 
   let body_serialized = serialize_instr_seq body in

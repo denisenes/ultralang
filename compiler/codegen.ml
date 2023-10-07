@@ -43,13 +43,10 @@ let gen_stack_remove_top () =
   [Add (Op_reg `RSP, Op_immid value_size)]
 
 let gen_loc_var_getter name =
-  let variable_location = Stack.get_local_var_offset name in
-  match variable_location with
-  | Some offset ->
-    [
-      Mov (Op_reg `RAX, Op_mem_ptr (FromPlaceSubOff (`RBP, offset)))
-    ]
-  | None -> raise (CompilationError ("Undefined symbol " ^ name))
+  let var_place = Stack.get_local_var_place name in
+  [
+    Mov (Op_reg `RAX, var_place)
+  ]
 
 let rec gen_func_call fname args =
   let check_args_size args expected = 
@@ -224,10 +221,24 @@ and gen_if_expr (cond : exp) (exp_true : exp) (exp_false : exp) =
   @
   [ Label label2 ]
 
+and gen_func_prologue =
+  [
+    Push (Op_reg `RBP);
+    Mov (Op_reg `RBP, Op_reg `RSP)
+  ]
+
+and gen_func_epilogue =
+  [
+    Pop (Op_reg `RBP);
+    Ret
+  ]
+
 and gen_function (name : name) (args : name list) (ast : exp) ~global : unit = 
-  let instrs = gen_expr ast in
-  Funcmap.add_func name instrs global;
-  Stack.create_new_frame args;
+  let _ = Stack.create_new_frame args in
+  let instrs' = gen_expr ast in
+  let instrs  = gen_func_prologue @ instrs' @ gen_func_epilogue in
+  let _ = Stack.destroy_top_frame () in
+  Funcmap.add_func name instrs global
 
 and gen_def_expr (defexpr : def) : unit = 
   match defexpr with 
@@ -244,18 +255,6 @@ and gen_expr = function
   | Let (name, value, body) -> gen_let_expr name value body
   | Defexp def -> gen_def_expr def; []
   | _ -> raise (CompilationError "Not implemented yet")
-
-let gen_func_prologue =
-  [
-    Push (Op_reg `RBP);
-    Mov (Op_reg `RBP, Op_reg `RSP)
-  ]
-
-let gen_func_epilogue =
-  [
-    Pop (Op_reg `RBP);
-    Ret
-  ]
 
 let gen_highelevel_exprs (asts : exp list) : unit =
   Stack.create_new_frame [];

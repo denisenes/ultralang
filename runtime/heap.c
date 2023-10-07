@@ -67,8 +67,8 @@ Heap* heapInit() {
     heap->heap_end   = h_ptr + HEAP_SIZE;
     heap->bump_ptr   = 0;
 
-    printf("[Heap] start: %p\n", heap->heap_start);
-    printf("[Heap] end:   %p\n", heap->heap_end);
+    //printf("[Heap] start: %p\n", heap->heap_start);
+    //printf("[Heap] end:   %p\n", heap->heap_end);
     return heap;
 }
 
@@ -82,8 +82,8 @@ inline val heapAllocCons(val car, val cdr) {
     cons->car = car;
     cons->cdr = cdr;
 
-    printf("[Heap] cons (addr:%p) (car %"PRIu64") (cdr: %"PRIu64")\n",
-        cons, cons->car, cons->cdr);
+    //printf("[Heap] cons (addr:%p) (car %"PRIu64") (cdr: %"PRIu64")\n",
+    //    cons, cons->car, cons->cdr);
 
     assert((((uint64_t) cons) & cons_mask) == 0); // heap must be aligned by 8 byte
     return (val) tagged_cons((uint64_t) cons);
