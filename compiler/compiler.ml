@@ -22,7 +22,7 @@ let compile asts =
 
   Printf.printf "AST:\n";
   let _ = List.map (fun ast -> 
-    let res = Shared.Printer.ast_to_string ast in print_endline res
+    let res = Shared.Printer.ast_to_string ast 0 in print_endline res
   ) asts
   in
   Printf.printf "\n\n================\n";

@@ -40,3 +40,12 @@ let list_of_pairs (sexpr : value) : value list =
 let pretty_bool = function
   | true  -> "true"
   | false -> "false"
+
+let rec take n lst = 
+  match lst with
+  | [] when n > 0 -> raise (Failure "Take expected longer list")
+  | [] -> []
+  | (x::xs) -> (
+    match n with
+    | 0 -> []
+    | _ -> x :: take (n-1) xs)

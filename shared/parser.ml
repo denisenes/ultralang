@@ -146,7 +146,7 @@ let rec read_sexprs stream : value list =
 (* ================== AST related stuff ================== *)
 
 let rec transform_cond = function
-  | [] -> Literal (Symbol "error")
+  | [] -> Literal (Fixnum 0) (* TODO call error *)
   | (Pair(cond, Pair(res, Nil)))::cond_tail ->
     If (build_ast cond, build_ast res, transform_cond cond_tail)
   | _ -> raise (SyntaxError "(cond conditions)")

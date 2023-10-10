@@ -157,7 +157,7 @@ let rec loop stream env =
   let expr = read_sexpression stream in
   (* AST build*)
   let ast = build_ast expr in
-  print_endline ("AST: " ^ ast_to_string ast);
+  print_endline ("AST: " ^ ast_to_string ast 0);
   (* Eval *)
   let (value, env') = eval_ast ast env in
   (* Print *)

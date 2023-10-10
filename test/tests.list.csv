@@ -19,3 +19,7 @@ if1.lsp, 321
 if2.lsp, #f
 let1.lsp, 124
 let2.lsp, #t
+call.lsp, 300
+call2.lsp, 123457
+fact.lsp, 1307674368000
+fibonacci.lsp, 987

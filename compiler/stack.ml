@@ -2,6 +2,9 @@ open Common
 
 open Shared.Common
 
+(* It's not honest simulation of stack *)
+(* This is supposed to save function frame context when
+   compiler moves to codegen of nested function definition *)
 type frame_descriptor = {
   mutable rsp_offset    : int; (* rsp = rbp + offset *)
   mutable values        : (string * int) list;
@@ -24,20 +27,46 @@ let destroy_top_frame () : unit =
   assert (List.length !global_stack > 0);
   global_stack := List.tl !global_stack
 
-let push () = 
+let topFrame () : frame_descriptor =
+  assert (List.length !global_stack > 0);
+  List.hd !global_stack
+
+(* 
+  This function moves offset of abstract rsp inside frame_descriptor
+  but actual rsp advance should be made inside codegen func (!!!)
+  It can be done by 2 ways:
+    * Substruction from RSP
+    * Using push instructions
+*)
+let pushN num =
   match !global_stack with
   | [] -> raise (CompilationError "No frame descriptor")
   | (frame::_) ->
-    frame.rsp_offset <- frame.rsp_offset + value_size;
-    frame.rsp_offset;;
+    frame.rsp_offset <- frame.rsp_offset + (value_size * num);
+    frame.rsp_offset
+;;
+
+let push () = 
+  pushN 1
+;;
+
+(* 
+  This function moves offset of abstract rsp inside frame_descriptor
+  but actual rsp retreat should be made inside codegen func (!!!)
+  It can be done by 2 ways:
+    * Addition to RSP
+    * Using pop instructions
+*)
+let popN num =
+  match !global_stack with
+  | [] -> raise (CompilationError "No frame descriptor")
+  | (frame::_) ->
+    frame.rsp_offset <- frame.rsp_offset - (value_size * num);
+    ()
 ;;
 
 let pop () =
-  match !global_stack with
-  | [] -> raise (CompilationError "No frame descriptor")
-  | (frame::_) ->
-    frame.rsp_offset <- frame.rsp_offset - value_size;
-    ()
+  popN 1
 ;;
 
 let push_local_variable name =
@@ -67,7 +96,13 @@ let get_arg_place name : int_register option =
   | Some id -> Some (List.nth regs_for_int_arguments id)
 ;;
 
-(* TODO: rewrite as pure guys do *)
+(* 
+  Gets place of local variable. It can be both regular local binding
+  or function argument. Thus there are two kinds of places that 
+  can be returned from the function:
+    - Memory ptr to stack slot (for local bindings)
+    - Integer register (for arguments)
+*)
 let get_local_var_place name : operand = 
   let maybe_on_stack = get_local_var_offset name in
   match maybe_on_stack with

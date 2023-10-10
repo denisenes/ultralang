@@ -1,4 +1,5 @@
 open Shared.Common
+open Shared.Utils
 
 open Common
 
@@ -165,10 +166,30 @@ let rec gen_func_call fname args =
     in res
   in
 
-  let gen_func_call' (name : name) (args : exp list) =
-    (* TODO save volatile registers *)
-    gen_args_passing args @
-    [Call name]
+  let gen_save_caller_regs (args_n : int) : instruction list =
+    let _ = Stack.pushN args_n in
+    let regs = take args_n regs_for_int_arguments in
+    List.fold_left (fun acc reg ->
+      (Push (Op_reg reg)) :: acc
+    ) [] regs
+  in
+
+  let gen_restore_caller_regs (args_n : int) : instruction list =
+    let _ = Stack.popN args_n in
+    let regs = List.rev (take args_n regs_for_int_arguments) in
+    List.fold_left (fun acc reg ->
+      (Pop (Op_reg reg)) :: acc
+    ) [] regs
+  in
+
+  let gen_func_call' (name : name) (callee_args : exp list) =
+    let caller_args = (Stack.topFrame()).args in
+    let caller_args_n = List.length caller_args in
+
+    gen_save_caller_regs caller_args_n @
+    gen_args_passing callee_args  @
+    [Call name] @
+    gen_restore_caller_regs caller_args_n
   in
 
   match fname with
