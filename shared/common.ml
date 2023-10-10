@@ -23,6 +23,7 @@ and exp   =
     | Call    of exp * exp list
     | Lambda  of name list * exp
     | Defexp  of def
+    | ShouldNotReachHere of int
 
 and def = 
     | Val   of name * exp

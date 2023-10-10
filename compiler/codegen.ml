@@ -263,7 +263,7 @@ and gen_function (name : name) (args : name list) (ast : exp) ~global : unit =
 
 and gen_def_expr (defexpr : def) : unit = 
   match defexpr with 
-  | FnDef (name, args, body) -> gen_function name args body ~global:false
+  | FnDef (name, args, body) -> gen_function name args body ~global:true
   | _ -> raise (CompilationError "Not implemented yet")
 
 and gen_expr = function
@@ -275,6 +275,7 @@ and gen_expr = function
   | Call (fname, args)   -> gen_func_call fname args
   | Let (name, value, body) -> gen_let_expr name value body
   | Defexp def -> gen_def_expr def; []
+  | ShouldNotReachHere code -> gen_func_call (Var "ULTRA_runtime_error") [Literal(Fixnum code)]
   | _ -> raise (CompilationError "Not implemented yet")
 
 let gen_highelevel_exprs (asts : exp list) : unit =

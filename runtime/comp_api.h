@@ -2,4 +2,10 @@
 
 #include "types.h"
 
-inline val heapAllocCons(val car, val cdr) asm("ULTRA_cons");
+val 
+UL_heapAllocCons(val car, val cdr) 
+asm("ULTRA_cons");
+
+void 
+UL_fatalCoded(uint64_t code) 
+asm("ULTRA_runtime_error");

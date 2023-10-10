@@ -1,6 +1,9 @@
 .intel_syntax noprefix
 
+.extern ULTRA_runtime_error
 .text
+.global fibonacci
+.type fibonacci, @function
 fibonacci:
 	push rbp
 	mov rbp, rsp
@@ -34,7 +37,16 @@ L4:
 	mov rax, 4
 	jmp L3
 L2:
-	mov rax, 159
+	mov rax, 4
+	sub rsp, 8
+	mov QWORD PTR [rsp], rax
+	mov rax, rdi
+	cmp rax, QWORD PTR [rsp]
+	setg al
+	movzx rax, al
+	sal rax, 7
+	or rax, 31
+	add rsp, 8
 	cmp rax, 31
 	je L0
 	push rdi
@@ -63,7 +75,11 @@ L2:
 	add rsp, 8
 	jmp L1
 L0:
-	mov rax, 0
+	push rdi
+	mov rax, 4
+	mov rdi, rax
+	call ULTRA_runtime_error
+	pop rdi
 L1:
 L3:
 L5:
@@ -75,7 +91,7 @@ L5:
 ultra_entrypoint:
 	push rbp
 	mov rbp, rsp
-	mov rax, 60
+	mov rax, -492
 	mov rdi, rax
 	call fibonacci
 	pop rbp

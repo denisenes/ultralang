@@ -109,6 +109,7 @@ and eval_expr expr env =
       let env' = bind (var_name, eval_expr' var_val, env) in
       eval_expr body env'
     | Defexp _ -> raise (EvaluationError "This can't happen")
+    | ShouldNotReachHere code -> raise (EvaluationError ("Error: code = " ^ string_of_int code))
   in eval_expr' expr 
 
 and eval_defexpr dexpr env  =

@@ -72,7 +72,7 @@ Heap* heapInit() {
     return heap;
 }
 
-inline val heapAllocCons(val car, val cdr) {
+inline val UL_heapAllocCons(val car, val cdr) {
     maybeTriggerGC();
 
     ConsObj* cons = (ConsObj*) (heapPtr->heap_start + heapPtr->bump_ptr);

@@ -46,6 +46,8 @@ let rec ast_to_string (node : exp) (lvl : int) : string =
   | Defexp(Exp exp) -> (tab lvl) ^ ast_to_string exp (lvl+1)
   | Defexp(FnDef(name, arg_names, body)) ->
     (tab lvl) ^ "(Node<FnDef> " ^ name ^ " " ^ args_to_string arg_names ^ ast_to_string body (lvl+1) ^ (tab lvl) ^ ")"
+  | ShouldNotReachHere code ->
+    (tab lvl) ^ "Error(" ^ string_of_int code ^ ")"
 
 and value_to_string (sexpr : value) : string =
   match sexpr with
