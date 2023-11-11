@@ -1,12 +1,12 @@
 grammar ultra;
 
-program
+program *
     : (highLevelEntry ';;')+
     ;
 
 highLevelEntry
     : defExp
-    | infix_exp
+    | infix_exp *
     ;
 
 defExp
@@ -23,7 +23,7 @@ defFn
     ;
 
 infix_exp
-    : exp (infix_op exp)?
+    : exp (infix_op exp)? *
     ;
 
 exp
@@ -39,7 +39,7 @@ exp
     | identifier
     ;
 
-literal
+literal *
     : LIT_BOOL
     | LIT_INT
     | LIT_NIL

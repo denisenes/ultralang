@@ -1,5 +1,7 @@
 #include "printer.h"
 
+int is
+
 void printCons(val v) {
 	assert(is_fixnum(heapCar(v)));
 	assert(is_fixnum(heapCdr(v)));

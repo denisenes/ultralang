@@ -1,5 +1,5 @@
 open Common
-open Utils
+open Utility
 
 type string_reader =
   {

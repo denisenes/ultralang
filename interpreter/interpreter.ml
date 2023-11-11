@@ -1,6 +1,6 @@
-open Shared.Parser
+open Shared.Parser2
 open Shared.Common
-open Shared.Utils
+(* open Shared.Utility *)
 open Shared.Printer
 
 open Lispenv
@@ -89,35 +89,29 @@ and eval_expr expr env =
   let rec eval_expr' = function
     | Literal (Quote datum) -> datum
     | Literal literal -> literal
-    | Var name -> lookup (name, env)
+    | Ident name -> lookup (name, env)
     | If (cond, if_true,  _) when eval_expr' cond = Boolean true -> 
       eval_expr' if_true
     | If (cond, _, if_false) when eval_expr' cond = Boolean false ->
       eval_expr' if_false
     | If _ -> raise (EvaluationError "(if bool sexpr sexpr)")
-    | And (exp1, exp2) -> begin match (eval_expr' exp1, eval_expr' exp2) with
-      | (Boolean value1, Boolean value2) -> Boolean (value1 && value2)
-      | _ -> raise (EvaluationError "(and bool bool)") end
-    | Or (exp1, exp2) -> begin match (eval_expr' exp1, eval_expr' exp2) with
-      | (Boolean value1, Boolean value2) -> Boolean (value1 || value2)
-      | _ -> raise (EvaluationError "(or bool bool)") end
-    | Apply (func, exprs) -> eval_apply (eval_expr' func) (list_of_pairs (eval_expr' exprs))
-    | Call (Var "env", []) -> print_env env; Boolean true
+    (* | Apply (func, exprs) -> eval_apply (eval_expr' func) (list_of_pairs (eval_expr' exprs)) *)
+    | Call (Ident "env", []) -> print_env env; Boolean true
     | Call (expr, exprs) -> eval_apply (eval_expr' expr) (List.map eval_expr' exprs)
     | Lambda (args, body) -> Closure (args, body, env)
     | Let (var_name, var_val, body) -> 
       let env' = bind (var_name, eval_expr' var_val, env) in
       eval_expr body env'
-    | Defexp _ -> raise (EvaluationError "This can't happen")
     | ShouldNotReachHere code -> raise (EvaluationError ("Error: code = " ^ string_of_int code))
+    | _ -> raise (EvaluationError "Not implemented yet")
   in eval_expr' expr 
 
-and eval_defexpr dexpr env  =
+and eval_highlevel dexpr env  =
   match dexpr with
-  | Val (name, expr) -> let value = eval_expr expr env in
+  | DefVal (name, expr) -> let value = eval_expr expr env in
     (value, bind (name, value, env))
-  | FnDef(name, arg_names, body) -> eval_fndef name arg_names body env
-  | Exp expr -> (eval_expr expr env, env)
+  | DefFn (name, arg_names, body) -> eval_fndef name arg_names body env
+  | HLExp expr -> (eval_expr expr env, env)
 
 and eval_fndef name arg_names body env = 
   (* 1) Evaluate lambda to closure *)
@@ -131,17 +125,11 @@ and eval_fndef name arg_names body env =
   let clo = Closure (formals, body', bindloc (name, loc, closure_env)) in
   let () = loc := Some clo in
     (clo, bindloc (name, loc, env))
-  
 
-and eval_ast ast env = 
-  match ast with
-  | Defexp dexp -> eval_defexpr dexp env
-  | exp -> (eval_expr exp env, env)
-
-let executor (source : string) : unit =
+(* let executor (source : string) : unit =
   let sr = constr_string_reader source in
   let stream = new_input_stream sr in
-  let exprs = read_sexprs stream in
+  let exprs = parse_hl_exp stream in
   let asts = List.map (fun e -> build_ast e) exprs in
 
   let last_env : value env ref = ref base_env in (* needed to forward env through exprs during evaluation*)
@@ -149,22 +137,20 @@ let executor (source : string) : unit =
     (fun ast -> let (v, env) = eval_ast ast !last_env in last_env := env; v) 
     asts in
   let _ = List.map (fun v -> if is_printable_value v then print_value v else ()) values in
-  ();;
+  ();; *)
 
 let rec loop stream env = 
   print_string "> ";
   flush stdout;
   (* Read *)
-  let expr = read_sexpression stream in
-  (* AST build*)
-  let ast = build_ast expr in
+  let ast = parse_hl_exp stream in
   print_endline ("AST: " ^ ast_to_string ast 0);
   (* Eval *)
-  let (value, env') = eval_ast ast env in
+  (* let (value, env') = eval_ast ast env in *)
   (* Print *)
-  print_value value;
+  (* print_value value; *)
   (* Loop *)
-  loop stream env'
+  loop stream env
 
 let repl_starter () = 
   let stream = { buffer=[]; line_num=0; source=(Chan stdin)} in

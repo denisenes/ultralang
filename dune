@@ -1,4 +1,11 @@
+(env
+ (dev
+  (flags (:standard -g -w +42)))
+ (release
+  (ocamlopt_flags (:standard -g -O3))))
+
 (executable
  (public_name main)
  (name main)
- (libraries interpreter compiler))
+ (libraries interpreter)
+ )

@@ -1,34 +1,36 @@
 type 'a env = (string * 'a option ref) list
 
-type lobject = 
+type name  = string
+
+type value = 
     Fixnum    of int                                |
     Boolean   of bool                               |
     Symbol    of string                             |
-    Pair      of lobject * lobject                  |
-    Primitive of string * (lobject list -> lobject) |
-    Closure   of name list * exp * value env        |
+    Pair      of value * value                      |
+    Primitive of string * (value list -> value)     |
+    Closure   of name list * c_exp * value env      |
     Quote     of value                              | 
     Nil
 
-and value = lobject
-and name  = string
-and exp   =
-    | Literal of value
-    | Var     of name
-    | If      of exp * exp * exp
-    | And     of exp * exp
-    | Or      of exp * exp
-    | Let     of name * exp * exp
-    | Apply   of exp * exp
-    | Call    of exp * exp list
-    | Lambda  of name list * exp
-    | Defexp  of def
-    | ShouldNotReachHere of int
+and program = hl_entry list
 
-and def = 
-    | Val   of name * exp
-    | FnDef of name * name list * exp
-    | Exp   of exp
+and hl_entry =
+    | DefVal of name * c_exp
+    | DefFn  of name * name list * c_exp
+    | HLExp  of c_exp
+
+and c_exp   =
+    | Literal     of value
+    | Ident       of name
+    | If          of c_exp * c_exp * c_exp
+    | Let         of name * c_exp * c_exp
+    | Apply       of c_exp * (c_exp list)
+    | Call        of c_exp * c_exp list
+    | Lambda      of name list * c_exp
+    | Cond        of (c_exp * c_exp) list
+    | ListLiteral of c_exp list
+    | ShouldNotReachHere of int
+;;
 
 exception SyntaxError     of string;;
 exception PrintError      of string;;
