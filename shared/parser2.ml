@@ -227,7 +227,7 @@ and parse_exp stream : c_exp =
 
 and parse_infix_exp stream =
   eat_whitespaces stream;
-  let infix_op = ["*"; "+"; "-"; "/"; ">"; "<"; "=="; ":"] in
+  let infix_op = ["*"; "+"; "-"; "/"; ">"; "<"; "=="; ":"; "&&"; "||"; "%"] in
   let is_infix_op c = List.mem c infix_op in
 
   let exp1 = parse_exp stream in

@@ -16,11 +16,23 @@ let base_env : value env =
   in
   let prim_mul = function
     | [Fixnum(a); Fixnum(b)] -> Fixnum(a * b)
-    | _ -> raise (EvaluationError "(- int int)")
+    | _ -> raise (EvaluationError "(* int int)")
   in
   let prim_div = function
     | [Fixnum(a); Fixnum(b)] -> Fixnum(a / b)
-    | _ -> raise (EvaluationError "(- int int)")
+    | _ -> raise (EvaluationError "(/ int int)")
+  in
+  let prim_mod = function
+    | [Fixnum(a); Fixnum(b)] -> Fixnum(a mod b)
+    | _ -> raise (EvaluationError "(/ int int)")
+  in
+  let prim_and = function
+    | [Boolean(a); Boolean(b)] -> Boolean(a && b)
+    | _ -> raise (EvaluationError "(and boolean boolean)")
+  in
+  let prim_or = function
+    | [Boolean(a); Boolean(b)] -> Boolean(a || b)
+    | _ -> raise (EvaluationError "(or boolean boolean)")
   in
   let prim_gt = function
     | [Fixnum(a); Fixnum(b)] -> Boolean(a > b)
@@ -68,6 +80,9 @@ let base_env : value env =
     ("-", prim_minus);
     ("*", prim_mul);
     ("/", prim_div);
+    ("%", prim_mod);
+    ("&&", prim_and);
+    ("||", prim_or);
     (">", prim_gt);
     ("<", prim_lt);
     ("==", prim_eq_val);

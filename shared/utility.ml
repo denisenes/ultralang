@@ -1,7 +1,7 @@
 open Common
 
 let whitespaces =  ['\n'; ' '; '\t'; '\r']
-let spec_symbols = ['*'; '+'; '-'; '/'; '>'; '<'; '?'; '!'; '-'; '+'; '\'']
+let spec_symbols = ['*'; '+'; '-'; '/'; '>'; '<'; '!'; '-'; '+'; '\'']
 let delimiters = ['('; ')'; '{'; '}'; ';'; '\"'; ',']
 
 let keywords = 
@@ -24,7 +24,7 @@ let is_ident_forwarding_chr = function
 
 let is_ident_valid_chr = function
   | 'A' .. 'Z' | 'a' .. 'z' 
-  | '0' .. '9' | '_' -> true
+  | '0' .. '9' | '_' | '?' -> true
   | _ -> false
 
 let rec is_list pair =
