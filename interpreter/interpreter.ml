@@ -144,7 +144,7 @@ let rec loop stream env =
   flush stdout;
   (* Read *)
   let ast = parse_hl_exp stream in
-  print_endline ("AST: " ^ ast_to_string ast 0);
+  print_endline ("AST: " ^ ast_to_string ast);
   (* Eval *)
   (* let (value, env') = eval_ast ast env in *)
   (* Print *)

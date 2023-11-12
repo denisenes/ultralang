@@ -4,57 +4,57 @@ program *
     : (highLevelEntry ';;')+
     ;
 
-highLevelEntry
-    : defExp
+highLevelEntry *
+    : defExp *
     | infix_exp *
     ;
 
-defExp
-    : defVal
-    | defFn
+defExp *
+    : defVal *
+    | defFn *
     ;
 
-defVal
-    : VAL identifier DEFEQ infix_exp
+defVal *
+    : VAL identifier DEFEQ infix_exp *
     ;
 
-defFn
-    : FN identifier argsExp DEFEQ infix_exp
+defFn *
+    : FN identifier argsExp DEFEQ infix_exp *
     ;
 
-infix_exp
+infix_exp *
     : exp (infix_op exp)? *
     ;
 
 exp
-    : ifExp
-    | LPAREN infix_exp RPAREN
+    : ifExp *
+    | LPAREN infix_exp RPAREN *
     | condExp
-    | letExp
+    | letExp *
     | applyExp
     | lambdaDef
-    | literal
+    | literal *
     | lit_list
     | callExp
-    | identifier
+    | identifier *
     ;
 
 literal *
-    : LIT_BOOL
-    | LIT_INT
-    | LIT_NIL
+    : LIT_BOOL *
+    | LIT_INT *
+    | LIT_NIL *
     ;
 
-ifExp
-    : IF infix_exp THEN infix_exp ELSE infix_exp
+ifExp *
+    : IF infix_exp THEN infix_exp ELSE infix_exp *
     ;
 
 condExp
     : COND (COND_DELIM infix_exp COND_ARROW infix_exp)+
     ;
 
-letExp
-    : LET identifier DEFEQ infix_exp IN infix_exp
+letExp *
+    : LET identifier DEFEQ infix_exp IN infix_exp *
     ;
 
 applyExp
@@ -69,15 +69,15 @@ lambdaDef
     : LAM identifier (argsExp)? DEFEQ infix_exp
     ;
 
-argsExp
-    : (identifier | freeIdentifier)+ | LIT_UNIT
+argsExp *
+    : (identifier | freeIdentifier)+ | LIT_UNIT *
     ;
 
-identifier
-    : IDENTIFIER
+identifier *
+    : IDENTIFIER *
     ;
 
-infix_op
+infix_op *
     : PLUS
     | MINUS
     | PROD

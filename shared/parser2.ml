@@ -100,6 +100,25 @@ and eat_whitespaces stream =
 
 (* === Parser === *)
 
+let check_next_keyword stream expected =
+  let actual = read_token stream false in
+  if actual = expected && is_keyword actual
+    then ()
+    else raise (SyntaxError ("Unexpected token: expected=" ^ expected ^ ", actual=" ^ actual))
+
+let is_valid_ident ident =
+  if not (is_keyword ident) then begin 
+    let fch = String.get ident 0 in
+    (is_ident_forwarding_chr fch) && 
+    String.for_all (fun c -> is_ident_valid_chr c) ident
+  end else
+    false
+
+let check_is_valid_ident (ident : string) : unit =
+  if (is_valid_ident ident)
+    then ()
+    else raise (SyntaxError "Incorrect identifier")
+
 let check_opening_delim stream del : bool =
   let opening = read_char stream in
   match opening with
@@ -115,8 +134,29 @@ let check_closing_delim stream del =
   | ')' | ']' when closing = del -> ()
   | _ -> raise (SyntaxError ("Unexpected ending of an expression: " ^ string_of_char closing))
 
+let rec parse_call_args stream (acc : c_exp list) : c_exp list =
+  if not (List.is_empty acc) then begin
+    eat_whitespaces stream;
+    let ch = read_char stream in
+    match ch with
+      | ',' -> parse_call_args stream (acc @ [parse_infix_exp stream]) 
+      | ')' -> unread_char stream ch; acc
+      | _ -> raise (SyntaxError "Expected delimeter between call arguments") 
+  end else (* Parse first argument *)
+    let tok = read_token stream false in
+    match tok with
+    | "nothing" -> begin
+      let ch = read_char stream in
+      match ch with
+      | ')' -> unread_char stream ch; []
+      | _ -> raise (SyntaxError "Incorrect syntax of 0-ary function")
+      end
+    | _ -> begin
+      unread_token stream tok;
+      parse_call_args stream (acc @ [parse_infix_exp stream])
+      end
 
-let rec parse_exp stream =
+and parse_exp stream : c_exp =
   eat_whitespaces stream;
   let ch = read_char stream in
 
@@ -147,11 +187,47 @@ let rec parse_exp stream =
     | _ -> raise (SyntaxError "Not implemented yet")
   else 
 
-  raise (SyntaxError ("Expression is not supported, ch = " ^ string_of_char ch))
+  let _   = unread_char stream ch   in
+  let tok = read_token stream false in
+
+  if tok = "if" then
+    let bexp = parse_infix_exp stream in
+    check_next_keyword stream "then";
+    let branch1 = parse_infix_exp stream in
+    check_next_keyword stream "else";
+    let branch2 = parse_infix_exp stream in
+    If(bexp, branch1, branch2)
+  else
+
+  if tok = "let" then
+    let name = read_token stream false in
+    check_is_valid_ident name;
+    check_next_keyword stream "=";
+    let val_exp = parse_infix_exp stream in
+    check_next_keyword stream "in";
+    let body_exp = parse_infix_exp stream in
+    Let (name, val_exp, body_exp)
+  else
+
+  if is_valid_ident tok then begin
+    eat_whitespaces stream;
+    let ch = read_char stream in
+    match ch with
+    | '(' -> let args = parse_call_args stream [] in 
+      begin
+      eat_whitespaces stream;
+      match read_char stream with
+      | ')' -> Call (Ident tok, args)
+      | _ -> raise (SyntaxError "Incorrect function call syntax")
+      end
+    | _ -> unread_char stream ch; Ident tok
+  end else
+
+  raise (SyntaxError ("Expression is not supported, current token = " ^ tok))
 
 and parse_infix_exp stream =
   eat_whitespaces stream;
-  let infix_op = ["*"; "+"; "-"; "/"; ">"; "<"; "="; ":"] in
+  let infix_op = ["*"; "+"; "-"; "/"; ">"; "<"; "=="; ":"] in
   let is_infix_op c = List.mem c infix_op in
 
   let exp1 = parse_exp stream in
@@ -167,10 +243,28 @@ and parse_infix_exp stream =
 
 let parse_hl_exp stream =
   let parse_val_def () =
-    HLExp (Literal Nil)
+    let name = read_token stream false in
+    check_is_valid_ident name;
+    check_next_keyword stream "=";
+    let val_exp = parse_infix_exp stream in
+    DefVal (name, val_exp)
   in
   let parse_func_def () =
-    HLExp (Literal Nil)
+    let rec parse_args acc =
+      match read_token stream false with
+      | "nothing" -> if List.is_empty acc
+        then begin
+          check_next_keyword stream "=";
+          acc
+        end else raise (SyntaxError "Unit literal is in inappropriate place")
+      | "=" -> acc
+      | ident -> check_is_valid_ident ident; parse_args (acc @ [ident])
+    in
+    let fname = read_token stream false in
+    check_is_valid_ident fname;
+    let args = parse_args [] in
+    let body = parse_infix_exp stream in
+    DefFn (fname, args, body)
   in
 
   let tok = read_token stream false in

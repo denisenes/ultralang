@@ -16,12 +16,12 @@ let rec exp_to_string (node : c_exp) (lvl : int) : string =
   | Ident name ->  
     (tab lvl) ^ "Var(" ^ name ^ ")"
   | If(cond, l, r) ->
-    (tab lvl) ^ "(Node<If>" ^ exp_to_string cond (lvl+1) ^ exp_to_string l (lvl+1) ^ exp_to_string r (lvl+1) ^ (tab lvl) ^ ")"
+    (tab lvl) ^ "(Node<If> " ^ exp_to_string cond (lvl+1) ^ exp_to_string l (lvl+1) ^ exp_to_string r (lvl+1) ^ (tab lvl) ^ ")"
   | Apply(func, _) -> 
-    (tab lvl) ^ "(Node<Apply>" ^ exp_to_string func (lvl+1) ^ (* ast_to_string e (lvl+1) ^ *) (tab lvl) ^ ")"
+    (tab lvl) ^ "(Node<Apply> " ^ exp_to_string func (lvl+1) ^ (* ast_to_string e (lvl+1) ^ *) (tab lvl) ^ ")"
   | Call(func, args) -> 
     let string_args = (String.concat " " (List.map (fun x -> exp_to_string x (lvl+1)) args)) in
-    (tab lvl) ^ "(Node<Call>" ^ exp_to_string func (lvl+1) ^ string_args ^ (tab lvl) ^ ")"
+    (tab lvl) ^ "(Node<Call> " ^ exp_to_string func (lvl+1) ^ string_args ^ (tab lvl) ^ ")"
   | Lambda (args, body) -> 
     (tab lvl) ^ "(Node<Lambda> " ^ args_to_string args ^ exp_to_string body (lvl+1) ^ (tab lvl) ^ ")"
   | Let (var_name, var_val, body) -> 
@@ -68,7 +68,7 @@ let rec print_env (e : value env) : unit = match e with
       | None -> print_string "<nothing>")
   ; (print_env rest)
 
-
 let ast_to_string = function
-  | HLExp exp -> exp_to_string exp
-  | _ -> raise (EvaluationError "Not implemented yet")
+  | HLExp exp -> "(HLNode<HLExp> " ^ exp_to_string exp 1 ^ ")"
+  | DefVal (name, exp) -> "(HLNode<DefVal> " ^ name ^ " " ^ exp_to_string exp 1 ^ ")" 
+  | DefFn (name, args, exp) -> "(HLNode<DefFn> " ^ name ^ "[ " ^ args_to_string args ^ "] " ^ exp_to_string exp 1 
