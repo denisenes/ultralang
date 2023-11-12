@@ -33,7 +33,7 @@ let base_env : value env =
   let prim_eq_val = function
     | [Fixnum(a); Fixnum(b)] -> Boolean(a = b)
     | [Boolean(a); Boolean(b)] -> Boolean(a = b)
-    | _ -> raise (EvaluationError "(= (int|boolean) (int|boolean))")
+    | _ -> raise (EvaluationError "(== (int|boolean) (int|boolean))")
   in
   let prim_pair = function
     | [car; cdr] -> Pair(car, cdr)
@@ -70,8 +70,8 @@ let base_env : value env =
     ("/", prim_div);
     (">", prim_gt);
     ("<", prim_lt);
-    ("=", prim_eq_val);
-    ("cons", prim_pair);
+    ("==", prim_eq_val);
+    (":", prim_pair);
     ("list", prim_list);
     ("car", prim_car);
     ("cdr", prim_cdr);
@@ -106,7 +106,7 @@ and eval_expr expr env =
     | _ -> raise (EvaluationError "Not implemented yet")
   in eval_expr' expr 
 
-and eval_highlevel dexpr env  =
+and eval_highlevel (dexpr : hl_entry) env : value * value env  =
   match dexpr with
   | DefVal (name, expr) -> let value = eval_expr expr env in
     (value, bind (name, value, env))
@@ -146,11 +146,12 @@ let rec loop stream env =
   let ast = parse_hl_exp stream in
   print_endline ("AST: " ^ ast_to_string ast);
   (* Eval *)
-  (* let (value, env') = eval_ast ast env in *)
+  let (value, env') = eval_highlevel ast env in
   (* Print *)
-  (* print_value value; *)
+  print_string "< ";
+  print_value value;
   (* Loop *)
-  loop stream env
+  loop stream env'
 
 let repl_starter () = 
   let stream = { buffer=[]; line_num=0; source=(Chan stdin)} in
