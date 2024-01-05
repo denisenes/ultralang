@@ -2,6 +2,7 @@ open Shared.Parser2
 open Shared.Common
 (* open Shared.Utility *)
 open Shared.Printer
+open Shared.Asttransform
 
 open Lispenv
 
@@ -154,14 +155,15 @@ and eval_fndef name arg_names body env =
   let _ = List.map (fun v -> if is_printable_value v then print_value v else ()) values in
   ();; *)
 
-let rec loop stream env = 
+let rec loop stream env =
   print_string "> ";
   flush stdout;
   (* Read *)
   let ast = parse_hl_exp stream in
-  print_endline ("AST: " ^ ast_to_string ast);
+  let lowered_ast = lower_hl_entry ast in
+  print_endline ("AST: " ^ ast_to_string lowered_ast);
   (* Eval *)
-  let (value, env') = eval_highlevel ast env in
+  let (value, env') = eval_highlevel lowered_ast env in
   (* Print *)
   print_string "< ";
   print_value value;

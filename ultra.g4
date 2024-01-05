@@ -29,13 +29,13 @@ infix_exp *
 exp
     : ifExp *
     | LPAREN infix_exp RPAREN *
-    | condExp
+    | condExp *
     | letExp *
     | applyExp
     | lambdaDef
     | literal *
-    | lit_list
-    | callExp
+    | lit_list *
+    | callExp *
     | identifier *
     ;
 
@@ -49,7 +49,7 @@ ifExp *
     : IF infix_exp THEN infix_exp ELSE infix_exp *
     ;
 
-condExp
+condExp *
     : COND (COND_DELIM infix_exp COND_ARROW infix_exp)+
     ;
 
@@ -90,7 +90,7 @@ infix_op *
 freeIdentifier
     : '@' IDENTIFIER;
 
-lit_list
+lit_list *
     : LBRACKET infix_exp (COMMA infix_exp)* RBRACKET
     ;
 

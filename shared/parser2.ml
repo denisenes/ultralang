@@ -90,7 +90,9 @@ and unread_token stream (tok : string) : unit =
 
 (* remove leading whitespaces in stream *)
 and eat_whitespaces stream =
-  if eof_in_stream stream then () else
+  if eof_in_stream stream 
+    then () 
+  else
     
   let chr = read_char stream in
   if is_white chr
@@ -104,7 +106,7 @@ let check_next_keyword stream expected =
   let actual = read_token stream false in
   if actual = expected && is_keyword actual
     then ()
-    else raise (SyntaxError ("Unexpected token: expected=" ^ expected ^ ", actual=" ^ actual))
+    else raise (SyntaxError ("Unexpected token: expected = " ^ expected ^ ", actual = " ^ actual))
 
 let is_valid_ident ident =
   if not (is_keyword ident) then begin 
@@ -156,6 +158,42 @@ let rec parse_call_args stream (acc : c_exp list) : c_exp list =
       parse_call_args stream (acc @ [parse_infix_exp stream])
       end
 
+and parse_cond_subexps stream acc : (c_exp * c_exp) list =
+  let parse_subexp () = 
+    let bool_exp   = parse_infix_exp stream in
+    check_next_keyword stream "=>";
+    let branch_exp = parse_infix_exp stream in
+    (bool_exp, branch_exp)
+  in
+
+  eat_whitespaces stream;
+  let next_tok = read_token stream false in
+  match next_tok with
+  | "endcond" -> List.rev acc
+  | "|" -> 
+    let subexp = parse_subexp () in
+    parse_cond_subexps stream (subexp::acc)
+  | _ when List.is_empty acc -> 
+    unread_token stream next_tok; 
+    let subexp = parse_subexp () in
+    parse_cond_subexps stream (subexp::acc)
+  | _ -> raise @@ SyntaxError ("Unexpected token in cond expression: " ^ next_tok)
+
+and parse_list_literal stream : c_exp list =
+  let rec parse_next acc =
+    eat_whitespaces stream;
+    let ch = read_char stream in
+    match ch with
+    | ']' -> List.rev acc
+    | ',' -> 
+      let exp = parse_infix_exp stream in
+      parse_next (exp::acc)
+    | _ -> raise @@ SyntaxError ("Unexpected token in list literal: " ^ string_of_char ch)
+  in
+  eat_whitespaces stream;
+  let first_exp = parse_infix_exp stream in
+  parse_next [first_exp]
+
 and parse_exp stream : c_exp =
   eat_whitespaces stream;
   let ch = read_char stream in
@@ -184,7 +222,7 @@ and parse_exp stream : c_exp =
     let ch' = read_char stream in
     match ch' with
     | ']' -> Literal Nil
-    | _ -> raise (SyntaxError "Not implemented yet")
+    | _ -> unread_char stream ch'; ListLiteral (parse_list_literal stream)
   else 
 
   let _   = unread_char stream ch   in
@@ -209,6 +247,11 @@ and parse_exp stream : c_exp =
     Let (name, val_exp, body_exp)
   else
 
+  if tok = "cond" then
+    let subexps = parse_cond_subexps stream [] in
+    Cond subexps
+  else
+
   if is_valid_ident tok then begin
     eat_whitespaces stream;
     let ch = read_char stream in
@@ -223,7 +266,7 @@ and parse_exp stream : c_exp =
     | _ -> unread_char stream ch; Ident tok
   end else
 
-  raise (SyntaxError ("Expression is not supported, current token = " ^ tok))
+  raise @@ SyntaxError ("Expression is not supported, current token = " ^ tok)
 
 and parse_infix_exp stream =
   eat_whitespaces stream;
@@ -285,7 +328,7 @@ let rec parse_program stream : program =
   if eof_in_stream stream 
     then []
     else let hl_exp = parse_hl_exp stream in
-      hl_exp::(parse_program stream) 
+      hl_exp::(parse_program stream)
 
 (* === High level === *)
 

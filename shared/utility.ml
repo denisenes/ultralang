@@ -2,10 +2,10 @@ open Common
 
 let whitespaces =  ['\n'; ' '; '\t'; '\r']
 let spec_symbols = ['*'; '+'; '-'; '/'; '>'; '<'; '!'; '-'; '+'; '\'']
-let delimiters = ['('; ')'; '{'; '}'; ';'; '\"'; ',']
+let delimiters = ['('; ')'; '{'; '}'; '['; ']'; ';'; '\"'; ',']
 
 let keywords = 
-  ["if"; "then"; "else"; "cond"; "|"; "="; "val"; "fn";
+  ["if"; "then"; "else"; "cond"; "=>"; "|"; "="; "val"; "fn";
   "in"; "let"; "nothing"]
 
 let is_white c = List.mem c whitespaces
