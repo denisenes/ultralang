@@ -1,6 +1,7 @@
-(let x 1000
-(let y 1000000 
+let x = 1000    in
+let y = 1000000 in
 
-  (if (> x y)
-    (let a #t a)
-    (let b #f b))))
+if x > y
+  then let a = #True  in a
+  else let b = #False in b
+;;

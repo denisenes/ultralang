@@ -1,4 +1,5 @@
 open Interpreter
+open Compiler
 
 let () = 
   if Array.length Sys.argv < 2
@@ -8,5 +9,5 @@ let () =
       match Sys.argv.(1) with
         | "test" -> executor Sys.argv.(2)
         | "repl" -> repl_starter()
-        (* | "compile" -> compiler Sys.argv.(2) *)
+        | "compile" -> compiler Sys.argv.(2)
         | _      -> failwith "Execution mode is wrong (repl|compile|test)"

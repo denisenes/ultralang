@@ -6,10 +6,17 @@ import functools
 results = []
 
 def compile_ultra(testname):
-    os.system('./main.exe compile ' + testname)
+    return os.system('./main.exe compile ' + testname)
 
 def compile_gcc():
-    os.system('cd runtime && make compile && mv ultra ../ultra')
+    return os.system('cd runtime && make compile && mv ultra ../ultra')
+
+def process_comp_err(name):
+    print("=======================")
+    print('Name:     ' + name)
+    print("Result: compilation error")
+    print("=======================")
+    results.append([name, False])
 
 def test(name, expected):
     global results
@@ -21,12 +28,16 @@ def test(name, expected):
     print('Expected: ' + expected)
     print("=======================")
     results.append([name, test_out == expected])
-    os.system('rm ultra')
+    os.system('rm ./ultra')
+    os.system('cd runtime && rm ultra && rm ultra.s')
 
 def runtest(name, expected):
-    compile_ultra(name)
-    compile_gcc()
-    test(name, expected)
+    res1 = compile_ultra(name)
+    res2 = compile_gcc()
+    if res1 == 0 and res2 == 0:
+        test(name, expected)
+    else:
+        process_comp_err(name)
 
 def main():
     data = []

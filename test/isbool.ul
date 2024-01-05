@@ -1,1 +1,1 @@
-(bool? (zero? 0))
+bool?(zero?(0));;

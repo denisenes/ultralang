@@ -2,7 +2,7 @@ repl: FORCE
 	OCAMLRUNPARAM=b dune exec main repl
 
 compile: FORCE
-	dune exec main compile $(SRC)
+	OCAMLRUNPARAM=b dune exec main compile $(SRC)
 	cd runtime && make
 
 testi: FORCE

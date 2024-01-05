@@ -7,5 +7,5 @@
 (executable
  (public_name main)
  (name main)
- (libraries interpreter)
+ (libraries interpreter compiler)
  )

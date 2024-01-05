@@ -1,1 +1,4 @@
-(if (null? #t) 123 321) 
+if null?(#True) 
+    then 123 
+    else 321
+;; 
