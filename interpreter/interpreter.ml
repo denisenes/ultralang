@@ -92,6 +92,7 @@ let base_env : value env =
     ("car", prim_car);
     ("cdr", prim_cdr);
     ("atom?", prim_atom);
+    ("is_nil", prim_atom);
     ("eq", prim_eq)
   ]
 
@@ -118,6 +119,8 @@ and eval_expr expr env =
     | Let (var_name, var_val, body) -> 
       let env' = bind (var_name, eval_expr' var_val, env) in
       eval_expr body env'
+    | Apply (funcexp, args) ->
+      eval_apply (eval_expr' funcexp) (List.map eval_expr' args)
     | ShouldNotReachHere code -> raise (EvaluationError ("Error: code = " ^ string_of_int code))
     | _ -> raise (EvaluationError "Not implemented yet")
   in eval_expr' expr 

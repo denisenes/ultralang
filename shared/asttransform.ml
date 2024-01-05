@@ -4,14 +4,19 @@ let rec lower_cond subexps =
   match subexps with
   | [] -> ShouldNotReachHere 0
   | (condition, branch)::tail -> 
-    If (condition, branch, lower_cond tail)
+    If (lower_ast condition, lower_ast branch, lower_cond tail)
 
-let rec lower_list_literal exps =
+and lower_list_literal exps =
   match exps with
   | [] -> Literal Nil
-  | (exp::tail) -> Call (Ident ":", [exp; lower_list_literal tail])
+  | (exp::tail) -> Call (Ident ":", [lower_ast exp; lower_list_literal tail])
 
-let rec lower_ast = function
+and lower_ast = function
+  (* Lowered nodes *)
+  | Call (Ident "apply", args) ->
+    Apply (lower_ast @@ List.hd args, List.map lower_ast (List.tl args))
+  | Cond subexps     -> lower_cond subexps
+  | ListLiteral exps -> lower_list_literal exps
   (* Trivial cases*)
   | Literal _            as node -> node
   | Ident _              as node -> node
@@ -26,9 +31,6 @@ let rec lower_ast = function
     Call (lower_ast funcexp, List.map lower_ast args)
   | Lambda (argnames, exp) ->
     Lambda (argnames, lower_ast exp)
-  (* Lowered nodes *)
-  | Cond subexps     -> lower_cond subexps
-  | ListLiteral exps -> lower_list_literal exps
 
 let lower_hl_entry = function
   | DefVal (name, exp) -> DefVal (name, lower_ast exp)

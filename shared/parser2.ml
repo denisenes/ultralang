@@ -78,11 +78,11 @@ let rec read_token stream read_delim : string =
   in
   eat_whitespaces stream;
   let s = (read_token' "") in
-  Printf.printf "(Token read: %s)\n" s;
+  (* Printf.printf "(Token read: %s)\n" s; *)
   s
 
 and unread_token stream (tok : string) : unit =
-  Printf.printf "(Token unread: %s)\n" tok;
+  (* Printf.printf "(Token unread: %s)\n" tok; *)
   if tok = "" then () else
   let tok' = tok ^ " " in (* because we don't want to join this token with the next *)
   let chs = List.init (String.length tok') (String.get tok') in
@@ -135,6 +135,16 @@ let check_closing_delim stream del =
   match closing with
   | ')' | ']' when closing = del -> ()
   | _ -> raise (SyntaxError ("Unexpected ending of an expression: " ^ string_of_char closing))
+
+let rec parse_def_args stream acc =
+  match read_token stream false with
+  | "nothing" -> if List.is_empty acc
+    then begin
+      check_next_keyword stream "=";
+      acc
+    end else raise (SyntaxError "Unit literal is in inappropriate place")
+  | "=" -> acc
+  | ident -> check_is_valid_ident ident; parse_def_args stream (acc @ [ident])
 
 let rec parse_call_args stream (acc : c_exp list) : c_exp list =
   if not (List.is_empty acc) then begin
@@ -252,6 +262,12 @@ and parse_exp stream : c_exp =
     Cond subexps
   else
 
+  if tok = "lambda" || tok = "lam" then
+    let args = parse_def_args stream [] in
+    let body = parse_infix_exp stream in
+    Lambda (args, body)
+  else
+
   if is_valid_ident tok then begin
     eat_whitespaces stream;
     let ch = read_char stream in
@@ -293,19 +309,9 @@ let parse_hl_exp stream =
     DefVal (name, val_exp)
   in
   let parse_func_def () =
-    let rec parse_args acc =
-      match read_token stream false with
-      | "nothing" -> if List.is_empty acc
-        then begin
-          check_next_keyword stream "=";
-          acc
-        end else raise (SyntaxError "Unit literal is in inappropriate place")
-      | "=" -> acc
-      | ident -> check_is_valid_ident ident; parse_args (acc @ [ident])
-    in
     let fname = read_token stream false in
     check_is_valid_ident fname;
-    let args = parse_args [] in
+    let args = parse_def_args stream [] in
     let body = parse_infix_exp stream in
     DefFn (fname, args, body)
   in

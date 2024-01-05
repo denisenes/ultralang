@@ -31,8 +31,7 @@ exp
     | LPAREN infix_exp RPAREN *
     | condExp *
     | letExp *
-    | applyExp
-    | lambdaDef
+    | lambdaDef *
     | literal *
     | lit_list *
     | callExp *
@@ -57,16 +56,12 @@ letExp *
     : LET identifier DEFEQ infix_exp IN infix_exp *
     ;
 
-applyExp
-    : APPLY identifier (infix_exp)+
-    ;
-
-callExp
+callExp *
     : identifier LPAREN infix_exp (',' infix_exp)* RPAREN
     ;
 
 lambdaDef
-    : LAM identifier (argsExp)? DEFEQ infix_exp
+    : LAM argsExp DEFEQ infix_exp
     ;
 
 argsExp *

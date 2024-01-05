@@ -1,5 +1,5 @@
 repl: FORCE
-	dune exec main repl
+	OCAMLRUNPARAM=b dune exec main repl
 
 compile: FORCE
 	dune exec main compile $(SRC)
