@@ -28,7 +28,8 @@ let rec exp_to_string (node : c_exp) (lvl : int) : string =
     (tab lvl) ^ "(Node<Let> " ^ var_name ^ exp_to_string var_val (lvl+1) ^ exp_to_string body (lvl+1) ^ (tab lvl) ^  ")"
   | ShouldNotReachHere code ->
     (tab lvl) ^ "Error(" ^ string_of_int code ^ ")"
-  | Cond _ | ListLiteral _ -> raise (EvaluationError "Not implemented yet")
+  | Cond _        -> "(Node<Cond>)"
+  | ListLiteral _ -> "(Node<ListLiteral>)"
 
 and value_to_string (sexpr : value) : string =
   match sexpr with

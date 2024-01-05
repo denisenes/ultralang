@@ -122,7 +122,7 @@ and eval_expr expr env =
     | Apply (funcexp, args) ->
       eval_apply (eval_expr' funcexp) (List.map eval_expr' args)
     | ShouldNotReachHere code -> raise (EvaluationError ("Error: code = " ^ string_of_int code))
-    | _ -> raise (EvaluationError "Not implemented yet")
+    | node -> raise (EvaluationError ("Not implemented yet: " ^ ast_to_string (HLExp node)))
   in eval_expr' expr 
 
 and eval_highlevel (dexpr : hl_entry) env : value * value env  =
@@ -145,18 +145,18 @@ and eval_fndef name arg_names body env =
   let () = loc := Some clo in
     (clo, bindloc (name, loc, env))
 
-(* let executor (source : string) : unit =
-  let sr = constr_string_reader source in
-  let stream = new_input_stream sr in
-  let exprs = parse_hl_exp stream in
-  let asts = List.map (fun e -> build_ast e) exprs in
+let executor (source : string) : unit =
+  let asts = parse_from_string source in
+  let lowered_ast = List.map lower_hl_entry asts in
 
-  let last_env : value env ref = ref base_env in (* needed to forward env through exprs during evaluation*)
+  let last_env : value env ref = ref base_env in (* needed to forward env through hl exprressions during evaluation *)
   let values = List.map 
-    (fun ast -> let (v, env) = eval_ast ast !last_env in last_env := env; v) 
-    asts in
-  let _ = List.map (fun v -> if is_printable_value v then print_value v else ()) values in
-  ();; *)
+    (fun ast -> let (v, env) = 
+      eval_highlevel ast !last_env in last_env := env; v) 
+    lowered_ast
+  in
+  let _ = print_value (values |> List.rev |> List.hd) in
+  ();;
 
 let rec loop stream env =
   print_string "> ";

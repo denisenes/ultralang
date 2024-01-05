@@ -5,7 +5,16 @@ compile: FORCE
 	dune exec main compile $(SRC)
 	cd runtime && make
 
-test: FORCE
+testi: FORCE
+	@cp _build/default/main.exe test/
+	@mv test test.t
+
+	-dune test
+	
+	@mv test.t test
+	@rm -f test/main.exe
+
+testc: FORCE
 	dune clean
 	dune build
 

@@ -9,115 +9,107 @@ INTERPRETER TESTS
 =================================================
 
 Integers
-  $ ${INTERPRETER} "1"
+  $ ${INTERPRETER} "1;;"
   1
-  $ ${INTERPRETER} "10"
+  $ ${INTERPRETER} "10;;"
   10
-  $ ${INTERPRETER} "987654321"
+  $ ${INTERPRETER} "987654321;;"
   987654321
 
 Negative integers
-  $ ${INTERPRETER} "~123"
+  $ ${INTERPRETER} "-123;;"
   -123
-  $ ${INTERPRETER} "~987654321"
+  $ ${INTERPRETER} "-987654321;;"
   -987654321
 
 Boolean literals
-  $ ${INTERPRETER} "#t"
+  $ ${INTERPRETER} "#True;;"
   #t
-  $ ${INTERPRETER} "#f"
+  $ ${INTERPRETER} "#False;;"
   #f
 
 Arithmetic ops
-  $ ${INTERPRETER} "(+ 64 32)"
+  $ ${INTERPRETER} "64 + 32;;"
   96
-  $ ${INTERPRETER} "(- 64 32)"
+  $ ${INTERPRETER} "64 - 32;;"
   32
-  $ ${INTERPRETER} "(+ 123 ~321)"
+  $ ${INTERPRETER} "123 + (-321);;"
   -198
-  $ ${INTERPRETER} "(- ~0 0)"
+  $ ${INTERPRETER} "(-0) + 0;;"
   0
-  $ ${INTERPRETER} "(* (* 2 3) (/ 100 (/ 4 2)))"
+  $ ${INTERPRETER} "(2 * 3) * (100 / (4 / 2));;"
   300
-  $ ${INTERPRETER} "(/ (* (- (+ 1000 2000) 1976) 4) 512)"
+  $ ${INTERPRETER} "(((1000 + 2000) - 1976) * 4) / 512;;"
   8
 
 Logical ops
-  $ ${INTERPRETER} "(and #f #f)"
+  $ ${INTERPRETER} "#False && #False;;"
   #f
-  $ ${INTERPRETER} "(or  #f #f)"
+  $ ${INTERPRETER} "#False || #False;;"
   #f
-  $ ${INTERPRETER} "(and #t #f)"
+  $ ${INTERPRETER} "#True && #False;;"
   #f
-  $ ${INTERPRETER} "(or  #t #f)"
+  $ ${INTERPRETER} "#True || #False;;"
   #t
-  $ ${INTERPRETER} "(and #t #t)"
+  $ ${INTERPRETER} "#True && #True;;"
   #t
-  $ ${INTERPRETER} "(or  #t #t)"
+  $ ${INTERPRETER} "#True || #True;;"
   #t
 
 If expression
-  $ ${INTERPRETER} "(if #t 666 777)"
+  $ ${INTERPRETER} "if #True then 666 else 777;;"
   666
-  $ ${INTERPRETER} "(if #f #f #t)"
+  $ ${INTERPRETER} "if #False then #True else #True;;"
   #t
-  $ ${INTERPRETER} "(if (or #t #f) (and #f #t) (+ 123 321))"
+  $ ${INTERPRETER} "if #True || #False then #False && #True else 123 + 321;;"
   #f
 
-Pair
-  $ ${INTERPRETER} "(cons 123 321)"
-  (123 . 321)
-  $ ${INTERPRETER} "(cons (* 100 10) (/ 100 10))"
-  (1000 . 10)
+Cons
+  $ ${INTERPRETER} "123 : (321 : []);;"
+  [123, 321]
+  $ ${INTERPRETER} "(100 * 10) : ((100 / 10) : []);;"
+  [1000, 10]
 
 Val
-  $ ${INTERPRETER} "(val a 300)"
+  $ ${INTERPRETER} "val a = 300;;"
   300
-  $ ${INTERPRETER} "(val a (- 321 21))"
+  $ ${INTERPRETER} "val a = 321 - 21;;"
   300
 
 List
-  $ ${INTERPRETER} "(list 1 2 3 4 5)"
-  (1 2 3 4 5)
-  $ ${INTERPRETER} "(list 1 #f 2 #t)"
-  (1 #f 2 #t)
+  $ ${INTERPRETER} "[1, 2,3 , 4,  5];;"
+  [1, 2, 3, 4, 5]
+  $ ${INTERPRETER} "[1, #False, 2, #True];;"
+  [1, #f, 2, #t]
 
 Apply
-  $ ${INTERPRETER} "(apply cons (list #f #t))"
-  (#f . #t)
-  $ ${INTERPRETER} "(apply + (list 23 34))"
+  $ ${INTERPRETER} "apply([[:]], #False, #True);;"
+  [#f, #t]
+  $ ${INTERPRETER} "apply((lam x y = x + y), 23, 34);;"
   57
 
-Quote
-  $ ${INTERPRETER} "'4"
-  4
-  $ ${INTERPRETER} "'(100 200 300 #t)"
-  (100 200 300 #t)
-  $ ${INTERPRETER} "'(this is test of quotation)"
-  (this is test of quotation)
-  $ ${INTERPRETER} "'(if #t (+ 1 2) (- 2 3))"
-  (if #t (+ 1 2) (- 2 3))
-  $ ${INTERPRETER} "(quote (some other test of quotation))"
-  (some other test of quotation)
-  $ ${INTERPRETER} "(apply + '(123 321))"
-  444
-  $ ${INTERPRETER} "(val x 'x)"
-  x
-
 Lambda
-  $ ${INTERPRETER} "(val inc (lambda (x) (+ x 1))) (inc 1)"
+  $ ${INTERPRETER} "val inc = (lambda x = x + 1);; inc(1);;"
   2
 
 Define
-  $ ${INTERPRETER} "(fn inc (x) (+ x 1)) (inc 10)"
+  $ ${INTERPRETER} "fn inc x = x + 1;; inc(10);;"
   11
 
 Let
-  $ ${INTERPRETER} "(let x 123 (+ x 123))"
+  $ ${INTERPRETER} "let x = 123 in x + 123;;"
   246
-  $ ${INTERPRETER} "(let x (* 10 10) (let y (/ 1000 2) (+ x y)))"
+  $ ${INTERPRETER} "let x = 10 * 10 in let y = 1000 / 2 in x + y;;"
   600
 
 Factorial
-  $ ${INTERPRETER} "$(cat fact.lsp)"
-  3628800
+  $ ${INTERPRETER} "$(cat fact.ul)"
+  1307674368000
+
+Fibonacci
+  $ ${INTERPRETER} "$(cat fibonacci.ul)"
+  987
+
+Map
+  $ ${INTERPRETER} "$(cat map.ul)"
+  55

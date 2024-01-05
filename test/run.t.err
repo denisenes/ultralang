@@ -1,0 +1,166 @@
+  $ export INTERPRETER="./main.exe test"
+
+Sanity check
+  $ echo "Testing started"
+  Testing started
+
+=================================================
+INTERPRETER TESTS
+=================================================
+
+Integers
+  $ ${INTERPRETER} "1"
+  /bin/sh: 6: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "10"
+  /bin/sh: 8: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "987654321"
+  /bin/sh: 10: ./main.exe: not found
+  [127]
+
+Negative integers
+  $ ${INTERPRETER} "~123"
+  /bin/sh: 12: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "~987654321"
+  /bin/sh: 14: ./main.exe: not found
+  [127]
+
+Boolean literals
+  $ ${INTERPRETER} "#t"
+  /bin/sh: 16: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "#f"
+  /bin/sh: 18: ./main.exe: not found
+  [127]
+
+Arithmetic ops
+  $ ${INTERPRETER} "(+ 64 32)"
+  /bin/sh: 20: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(- 64 32)"
+  /bin/sh: 22: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(+ 123 ~321)"
+  /bin/sh: 24: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(- ~0 0)"
+  /bin/sh: 26: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(* (* 2 3) (/ 100 (/ 4 2)))"
+  /bin/sh: 28: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(/ (* (- (+ 1000 2000) 1976) 4) 512)"
+  /bin/sh: 30: ./main.exe: not found
+  [127]
+
+Logical ops
+  $ ${INTERPRETER} "(and #f #f)"
+  /bin/sh: 32: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(or  #f #f)"
+  /bin/sh: 34: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(and #t #f)"
+  /bin/sh: 36: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(or  #t #f)"
+  /bin/sh: 38: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(and #t #t)"
+  /bin/sh: 40: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(or  #t #t)"
+  /bin/sh: 42: ./main.exe: not found
+  [127]
+
+If expression
+  $ ${INTERPRETER} "(if #t 666 777)"
+  /bin/sh: 44: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(if #f #f #t)"
+  /bin/sh: 46: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(if (or #t #f) (and #f #t) (+ 123 321))"
+  /bin/sh: 48: ./main.exe: not found
+  [127]
+
+Pair
+  $ ${INTERPRETER} "(cons 123 321)"
+  /bin/sh: 50: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(cons (* 100 10) (/ 100 10))"
+  /bin/sh: 52: ./main.exe: not found
+  [127]
+
+Val
+  $ ${INTERPRETER} "(val a 300)"
+  /bin/sh: 54: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(val a (- 321 21))"
+  /bin/sh: 56: ./main.exe: not found
+  [127]
+
+List
+  $ ${INTERPRETER} "(list 1 2 3 4 5)"
+  /bin/sh: 58: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(list 1 #f 2 #t)"
+  /bin/sh: 60: ./main.exe: not found
+  [127]
+
+Apply
+  $ ${INTERPRETER} "(apply cons (list #f #t))"
+  /bin/sh: 62: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(apply + (list 23 34))"
+  /bin/sh: 64: ./main.exe: not found
+  [127]
+
+Quote
+  $ ${INTERPRETER} "'4"
+  /bin/sh: 66: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "'(100 200 300 #t)"
+  /bin/sh: 68: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "'(this is test of quotation)"
+  /bin/sh: 70: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "'(if #t (+ 1 2) (- 2 3))"
+  /bin/sh: 72: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(quote (some other test of quotation))"
+  /bin/sh: 74: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(apply + '(123 321))"
+  /bin/sh: 76: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(val x 'x)"
+  /bin/sh: 78: ./main.exe: not found
+  [127]
+
+Lambda
+  $ ${INTERPRETER} "(val inc (lambda (x) (+ x 1))) (inc 1)"
+  /bin/sh: 80: ./main.exe: not found
+  [127]
+
+Define
+  $ ${INTERPRETER} "(fn inc (x) (+ x 1)) (inc 10)"
+  /bin/sh: 82: ./main.exe: not found
+  [127]
+
+Let
+  $ ${INTERPRETER} "(let x 123 (+ x 123))"
+  /bin/sh: 84: ./main.exe: not found
+  [127]
+  $ ${INTERPRETER} "(let x (* 10 10) (let y (/ 1000 2) (+ x y)))"
+  /bin/sh: 86: ./main.exe: not found
+  [127]
+
+Factorial
+  $ ${INTERPRETER} "$(cat fact.lsp)"
+  cat: fact.lsp: No such file or directory
+  /bin/sh: 88: ./main.exe: not found
+  [127]

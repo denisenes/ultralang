@@ -222,7 +222,7 @@ and parse_exp stream : c_exp =
     | _ -> raise (SyntaxError "Error while parsing boolean literal")
   else 
 
-  if is_digit ch then begin
+  if is_digit ch || ch = '-' then begin
     unread_char stream ch;
     let tok = read_token stream false in
     Literal (Fixnum (int_of_string tok))
