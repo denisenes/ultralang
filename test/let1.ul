@@ -1,1 +1,1 @@
-(let x 123 (inc x))
+let x = 123 in inc(x);;

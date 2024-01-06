@@ -1,13 +1,13 @@
 val n = 15;;
 
-fn dec x =
+fn testDec x =
 	x - 1
 ;;
 
 fn factorial num =
 	if num == 0
     	then 1
-		else num * factorial(dec(num))
+		else num * factorial(testDec(num))
 ;;
 
 factorial(n);;

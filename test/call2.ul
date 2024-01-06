@@ -1,3 +1,5 @@
-(fn testInc (x) (+ x 1))
+fn testInc x =
+    x + 1
+;;
 
-(testInc 123456)
+testInc(123456);;

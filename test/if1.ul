@@ -1,4 +1,4 @@
-if null?(#True) 
+if is_null(#True) 
     then 123 
     else 321
 ;; 

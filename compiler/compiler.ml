@@ -43,7 +43,10 @@ let compile asts =
 
 let compiler src_path =
   let asts = parse_from_file src_path in
-  compile asts
+  let lowered_asts = List.map
+    (fun ast -> Shared.Asttransform.lower_hl_entry ast) asts 
+  in
+  compile lowered_asts
 
 let compiler_test src =
   let asts = parse_from_string src in

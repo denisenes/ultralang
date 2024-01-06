@@ -73,27 +73,27 @@ let rec gen_func_call fname args =
       | "dec" -> [
         Sub (Op_reg `RAX, Op_immid (fixnum_to_immid 1))
       ]
-      | "zero?" -> [
+      | "is_zero" -> [
         Test (Op_reg `RAX, Op_reg `RAX);
         Mov  (Op_reg `RAX, Op_immid (fixnum_to_immid 0));
         Sete (Op_reg `AL);
         Movzx (Op_reg `RAX, Op_reg `AL)
       ] 
       @ cmp_res_to_bool
-      | "null?" -> [
+      | "is_null" -> [
         Cmp  (Op_reg `RAX, Op_immid nil_tag);
         Sete (Op_reg `AL);
         Movzx (Op_reg `RAX, Op_reg `AL)
       ]
       @ cmp_res_to_bool
-      | "int?" -> [
+      | "is_int" -> [
         And   (Op_reg `RAX, Op_immid fixnum_mask);
         Cmp   (Op_reg `RAX, Op_immid fixnum_tag);
         Sete  (Op_reg `AL);
         Movzx (Op_reg `RAX, Op_reg `AL)
       ]
       @ cmp_res_to_bool
-      | "bool?" -> [
+      | "is_bool" -> [
         And   (Op_reg `RAX, Op_immid bool_mask);
         Cmp   (Op_reg `RAX, Op_immid bool_tag);
         Sete  (Op_reg `AL);
@@ -127,7 +127,7 @@ let rec gen_func_call fname args =
         Idiv (Op_mem_ptr (FromPlace `RSP));
         Sal (Op_reg `RAX, Op_immid fixnum_shift)
       ]
-      | "=" -> [
+      | "==" -> [
         Cmp   (Op_reg `RAX, Op_mem_ptr (FromPlace `RSP));
         Sete  (Op_reg `AL);
         Movzx (Op_reg `RAX, Op_reg `AL)
@@ -194,10 +194,10 @@ let rec gen_func_call fname args =
 
   match fname with
   | Ident(name) -> (match name with
-    | "inc" | "dec" | "zero?" | "not" 
-    | "null?" | "int?" | "bool?" -> gen_unar name args
-    | "+" | "-" | "*" | "/" | "=" | ">" -> gen_bin_op name args
-    | "cons" -> gen_func_call' "ULTRA_cons" args
+    | "inc" | "dec" | "is_zero" | "not" 
+    | "is_null" | "is_int" | "is_bool" -> gen_unar name args
+    | "+" | "-" | "*" | "/" | "==" | ">" -> gen_bin_op name args
+    | ":" -> gen_func_call' "ULTRA_cons" args
     | name -> gen_func_call' name args)
   | _ -> raise (CompilationError "Not implemented yet")
 
