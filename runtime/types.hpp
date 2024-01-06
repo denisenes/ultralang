@@ -2,14 +2,14 @@
 
 #include <stdint.h>
 
-typedef int64_t QWORD;
+typedef uint64_t QWORD;
 
 /*
- * We assume that runtime is compiled for platform where
+ * It is assumed that runtime is compiled for platform where
  * sizeof(pointer) == 8 byte, so we can make dirty casts:
  * some ptr type --> uint64_t
  */
-typedef QWORD val;
+typedef QWORD UL_value;
 
 #define fixnum_mask  0b00000011
 #define fixnum_tag   0b00000000
@@ -27,8 +27,8 @@ typedef QWORD val;
 #define nil_tag  0b00101111
 #define is_nil(v) ((v & nil_mask) == nil_tag)
 
-#define cons_mask  0b00000111
-#define cons_tag   0b00000001
+#define cons_mask  0b00000111llu
+#define cons_tag   0b00000001llu
 #define cons_shift 3
 #define is_cons(v) ((v & cons_mask) == cons_tag)
 #define tagged_cons(v) (v | cons_tag)

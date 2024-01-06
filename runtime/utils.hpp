@@ -5,3 +5,4 @@
 #include <stdint.h>
 
 void fatal(char * message);
+void fatalCoded(uint64_t code);

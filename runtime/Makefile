@@ -1,5 +1,5 @@
 compile:
-	gcc -c --omit-frame-pointer -O3 ultra.s utils.c heap.c printer.c ultra_runtime.c
-	gcc *.o -o ultra
+	g++ -c --omit-frame-pointer -O3 ultra.s utils.cpp heap.cpp printer.cpp ultra_runtime.cpp
+	g++ *.o -o ultra
 	rm *.o
 

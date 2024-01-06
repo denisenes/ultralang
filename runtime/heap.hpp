@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <inttypes.h>
 
-#include "types.h"
+#include "types.hpp"
 
 #define HEAP_SIZE 104857600 // 100 Mb
 
@@ -19,11 +19,11 @@
  *  heap_start                bump_ptr                heap_end
  */  
 
-typedef struct Heap {
-    uint8_t  bump_ptr;
+typedef struct HeapDesc {
+    size_t  bump_ptr;
     uint8_t* heap_start;
     uint8_t* heap_end;
-} Heap;
+} HeapDesc;
 
 typedef enum ObjType {
     CONS,
@@ -48,15 +48,23 @@ typedef struct ObjHeader {
 #pragma pack (8)
 typedef struct ConsObj {
     ObjHeader header;
-    val       car;
-    val       cdr;
+    UL_value       car;
+    UL_value       cdr;
 } ConsObj;
 
-Heap* heapInit();
+HeapDesc* heapInit();
 
-val   heapAllocCons(val car, val cdr);
-val   heapCar(val cons);
-val   heapCdr(val cons);
+UL_value   heapAllocCons(UL_value car, UL_value cdr);
+
+inline UL_value heapCar(UL_value cons) {
+    cons = cons & ~(cons_mask);
+    return ((ConsObj *) cons)->car;
+}
+
+inline UL_value heapCdr(UL_value cons) {
+    cons = cons & ~(cons_mask);
+    return ((ConsObj *) cons)->cdr;
+}
 
 void dumpInit();
 void dumpHeap();

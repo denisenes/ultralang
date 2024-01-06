@@ -2,9 +2,9 @@ val a = 125 ;;
 val b = 1025;;
 
 fn gcd a b c =
-	if (((a % c) == 0) && ((b % c) == 0))
-        then c
-        else gcd(a, b, c - 1)
+        if (((a % c) == 0) && ((b % c) == 0))
+                then c
+                else gcd(a, b, c - 1)
 ;;
 
 gcd(a, b, b);;

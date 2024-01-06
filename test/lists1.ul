@@ -1,0 +1,13 @@
+fn generate0 x acc = cond
+    | is_zero(x) => acc
+    | #True => generate0(dec(x), x : acc)
+    endcond;;
+
+fn generate nothing =
+    let x_init = 10 in
+    generate0(x_init, []);;
+
+fn test nothing =
+    generate(nothing);;
+
+test(nothing);;

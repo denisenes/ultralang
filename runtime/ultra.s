@@ -2,87 +2,81 @@
 
 .extern ULTRA_runtime_error
 .text
-.global fibonacci
-.type fibonacci, @function
-fibonacci:
+.global generate0
+.type generate0, @function
+generate0:
 	push rbp
 	mov rbp, rsp
+	mov rax, rdi
+	test rax, rax
 	mov rax, 0
-	sub rsp, 8
-	mov QWORD PTR [rsp], rax
-	mov rax, rdi
-	cmp rax, QWORD PTR [rsp]
 	sete al
 	movzx rax, al
 	sal rax, 7
 	or rax, 31
-	add rsp, 8
-	cmp rax, 31
-	je L4
-	mov rax, 4
-	jmp L5
-L4:
-	mov rax, 4
-	sub rsp, 8
-	mov QWORD PTR [rsp], rax
-	mov rax, rdi
-	cmp rax, QWORD PTR [rsp]
-	sete al
-	movzx rax, al
-	sal rax, 7
-	or rax, 31
-	add rsp, 8
 	cmp rax, 31
 	je L2
-	mov rax, 4
+	mov rax, rsi
 	jmp L3
 L2:
-	mov rax, 4
-	sub rsp, 8
-	mov QWORD PTR [rsp], rax
-	mov rax, rdi
-	cmp rax, QWORD PTR [rsp]
-	setg al
-	movzx rax, al
-	sal rax, 7
-	or rax, 31
-	add rsp, 8
+	mov rax, 159
 	cmp rax, 31
 	je L0
+	push rsi
 	push rdi
-	mov rax, 8
-	sub rsp, 8
-	mov QWORD PTR [rsp], rax
-	mov rax, rdi
-	sub rax, QWORD PTR [rsp]
-	add rsp, 8
-	mov rdi, rax
-	call fibonacci
-	pop rdi
-	sub rsp, 8
-	mov QWORD PTR [rsp], rax
+	push rsi
 	push rdi
-	mov rax, 4
-	sub rsp, 8
-	mov QWORD PTR [rsp], rax
+	mov rax, rsi
+	mov rsi, rax
 	mov rax, rdi
-	sub rax, QWORD PTR [rsp]
-	add rsp, 8
 	mov rdi, rax
-	call fibonacci
+	call ULTRA_cons
 	pop rdi
-	add rax, QWORD PTR [rsp]
-	add rsp, 8
+	pop rsi
+	mov rsi, rax
+	mov rax, rdi
+	sub rax, 4
+	mov rdi, rax
+	call generate0
+	pop rdi
+	pop rsi
 	jmp L1
 L0:
+	push rsi
 	push rdi
 	mov rax, 0
 	mov rdi, rax
 	call ULTRA_runtime_error
 	pop rdi
+	pop rsi
 L1:
 L3:
-L5:
+	pop rbp
+	ret
+
+.global generate
+.type generate, @function
+generate:
+	push rbp
+	mov rbp, rsp
+	mov rax, 40
+	sub rsp, 8
+	mov QWORD PTR [rsp], rax
+	mov rax, 47
+	mov rsi, rax
+	mov rax, QWORD PTR [rbp-8]
+	mov rdi, rax
+	call generate0
+	add rsp, 8
+	pop rbp
+	ret
+
+.global test
+.type test, @function
+test:
+	push rbp
+	mov rbp, rsp
+	call generate
 	pop rbp
 	ret
 
@@ -91,9 +85,7 @@ L5:
 ultra_entrypoint:
 	push rbp
 	mov rbp, rsp
-	mov rax, 60
-	mov rdi, rax
-	call fibonacci
+	call test
 	pop rbp
 	ret
 
