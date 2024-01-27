@@ -6,7 +6,7 @@ import functools
 results = []
 
 def compile_ultra(testname):
-    return os.system('./main.exe compile ' + testname)
+    return os.system('OCAMLRUNPARAM=b ./main.exe compile ' + testname)
 
 def compile_gcc():
     return os.system('cd runtime && make compile && mv ultra ../ultra')

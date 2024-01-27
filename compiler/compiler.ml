@@ -15,11 +15,11 @@ let serialize out_file =
   let serialized = serialize_all() in
   Printf.fprintf out_file "%s\n" serialized
 
-let print_header =
+let print_header() =
   Printf.printf "Ultralang compiler (platform: x64)\n\n"
 
 let compile asts =
-  print_header;
+  print_header();
 
   Printf.printf "AST:\n";
   let _ = List.map (fun ast -> 

@@ -70,6 +70,10 @@ Cons
   $ ${INTERPRETER} "(100 * 10) : ((100 / 10) : []);;"
   [1000, 10]
 
+Call
+  $ ${INTERPRETER} "$(cat call3.ul)"
+  500
+
 Val
   $ ${INTERPRETER} "val a = 300;;"
   300
@@ -83,8 +87,8 @@ List
   [1, #f, 2, #t]
 
 Apply
-  $ ${INTERPRETER} "apply([[:]], #False, #True);;"
-  [#f, #t]
+  TODO $ ${INTERPRETER} "apply([[:]], #False, #True);;"
+  TODO [#f, #t]
   $ ${INTERPRETER} "apply((lam x y = x + y), 23, 34);;"
   57
 

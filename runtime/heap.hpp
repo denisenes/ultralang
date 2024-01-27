@@ -45,11 +45,12 @@ typedef struct ObjHeader {
     uint8_t sizebyte3;
 } ObjHeader;
 
+// Layout is important, edit carefully
 #pragma pack (8)
 typedef struct ConsObj {
     ObjHeader header;
-    UL_value       car;
-    UL_value       cdr;
+    UL_value  car;
+    UL_value  cdr;
 } ConsObj;
 
 HeapDesc* heapInit();

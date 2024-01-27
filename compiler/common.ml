@@ -20,17 +20,19 @@ type place = [ int_register | address ]
 type memory_ptr = 
   FromPlaceSubOff of int_register * int | (* [RSP - off] *)
   FromPlaceAddOff of int_register * int | (* [RSP + off] *)
-  FromPlace       of place         (* [RSP] or [0x123] *)
+  FromPlace       of place              | (* [RSP] or [0x123] *)
+  FromLabel       of string               (* [foo] e.g. in lea op *)
 
 type operand = 
   Op_mem_ptr of memory_ptr   |
   Op_reg     of int_register |
   Op_immid   of int          |
-  Op_label   of int
+  Op_label   of string
 
 type instruction =
   | Mov   of operand * operand
   | Movzx of operand * operand
+  | Lea   of operand * operand
   | Add   of operand * operand
   | Sub   of operand * operand
   | Imul  of operand * operand
@@ -48,13 +50,13 @@ type instruction =
   | Pop   of operand
   | Je    of operand
   | Jmp   of operand
-  | Call  of string
+  | Call  of operand
   | Cqo
   | Ret
   | Label of int (* not actually instruction*)
 
 (* Currently x64 ABI is supported. 
-   It could be good to think about my own ABI for ultra functions
+   It could be interesting to think about special ABI for ultra functions
    and use standard ABI for foreign calls (C FFI, runtime) *)
 (* https://refspecs.linuxbase.org/elf/x86_64-abi-0.99.pdf
    p. 20 *)

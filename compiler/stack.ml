@@ -2,7 +2,7 @@ open Common
 
 open Shared.Common
 
-(* It's not honest simulation of stack *)
+(* It's not an honest simulation of stack *)
 (* This is supposed to save function frame context when
    compiler moves to codegen of nested function definition *)
 type frame_descriptor = {
@@ -111,7 +111,7 @@ let get_local_var_place name : operand =
     let maybe_in_reg = get_arg_place name in
     match maybe_in_reg with
     | Some reg -> Op_reg reg
-    | None -> raise (CompilationError ("Variable " ^ name ^ " is undefined"))
+    | None -> Funcmap.log_func_map(); raise (CompilationError ("Variable " ^ name ^ " is undefined"))
 ;;
 
 let alloc_label_id () =

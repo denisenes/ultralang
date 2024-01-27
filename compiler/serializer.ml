@@ -5,7 +5,7 @@ open Common
 let serialize_reg = function
   | `RSP -> "rsp" 
   | `RBP -> "rbp"
-  | `RAX -> "rax" | `AL -> "al"
+  | `RAX -> "rax" | `EAX -> "eax" | `AL -> "al"
   | `RBX -> "rbx"
   | `RCX -> "rcx"
   | `RDX -> "rdx"
@@ -21,12 +21,13 @@ let serialize_mem_ptr = function
   | FromPlaceAddOff (reg, off)       -> "QWORD PTR [" ^ serialize_reg reg ^ "+" ^ string_of_int off ^ "]"
   | FromPlace (#int_register as reg) -> "QWORD PTR [" ^ serialize_reg reg ^ "]"
   | FromPlace (#address as addr)     -> "QWORD PTR [" ^ serialize_addr addr ^ "]"
+  | FromLabel label                  -> "[" ^ label ^ "]"
 
 let serialize_operand = function
   | Op_mem_ptr ptr -> serialize_mem_ptr ptr
   | Op_reg r       -> serialize_reg r
   | Op_immid v     -> string_of_int v
-  | Op_label id    -> Printf.sprintf "L%d" id
+  | Op_label id    -> id
 
 (* TODO operands check according to x64 spec *)
 let serialize_instr = function
@@ -36,6 +37,9 @@ let serialize_instr = function
   | Movzx (op1, op2)  -> 
     assert (not @@ op_is_immid op1);
     Printf.sprintf "movzx %s, %s"  (serialize_operand op1) (serialize_operand op2)
+  | Lea (op1, op2) ->
+    assert (not @@ op_is_immid op1);
+    Printf.sprintf "lea %s, %s"  (serialize_operand op1) (serialize_operand op2)
   | Add (op1, op2)  -> 
     assert (not @@ op_is_immid op1);
     Printf.sprintf "add %s, %s"  (serialize_operand op1) (serialize_operand op2)
@@ -84,8 +88,8 @@ let serialize_instr = function
   | Jmp op -> 
     assert (op_is_label op);
     Printf.sprintf "jmp %s" (serialize_operand op)
-  | Call func ->
-    Printf.sprintf "call %s" func
+  | Call name ->
+    Printf.sprintf "call %s" (serialize_operand name)
   | Cqo -> "cqo"
   | Ret -> "ret"
   | Label id -> Printf.sprintf "L%d:" id

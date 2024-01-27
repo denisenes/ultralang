@@ -1,0 +1,11 @@
+fn foo x y =
+    (x * x) + (y * y)
+;;
+
+fn test nothing =
+    let bar = foo in
+    let baz = bar in
+    baz(10, 20)
+;;
+
+test(nothing);;

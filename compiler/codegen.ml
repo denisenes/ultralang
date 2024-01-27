@@ -21,6 +21,8 @@ let nil_to_immid = nil_tag
 
 let cons_mask = 0b00000111
 let cons_tag  = 0b00000001
+let car_offset = 8  (* bytes *)
+let cdr_offset = 16 (* bytes *)
 
 let gen_nil () =
   [Mov (Op_reg `RAX, Op_immid nil_to_immid)]
@@ -32,6 +34,9 @@ let gen_fixnum num =
 let gen_bool (b : bool) =
   [Mov (Op_reg `RAX, Op_immid (bool_to_immid b))]
 
+let gen_cons_val_to_addr = 
+  [And (Op_reg `RAX, Op_immid (lnot cons_mask))]
+
 let gen_spilling reg = 
   let _ = Stack.push() in
   [
@@ -42,12 +47,6 @@ let gen_spilling reg =
 let gen_stack_remove_top () =
   Stack.pop();
   [Add (Op_reg `RSP, Op_immid value_size)]
-
-let gen_loc_var_getter name =
-  let var_place = Stack.get_local_var_place name in
-  [
-    Mov (Op_reg `RAX, var_place)
-  ]
 
 let rec gen_func_call fname args =
   let check_args_size args expected = 
@@ -103,6 +102,12 @@ let rec gen_func_call fname args =
       | "not" -> [
         Xor (Op_reg `RAX, Op_immid (1 lsl bool_shift))
         ]
+      | "head" -> gen_cons_val_to_addr @ [
+        Mov (Op_reg `RAX, Op_mem_ptr (FromPlaceAddOff (`RAX, car_offset)))
+      ]
+      | "tail" -> gen_cons_val_to_addr @ [
+        Mov (Op_reg `RAX, Op_mem_ptr (FromPlaceAddOff (`RAX, cdr_offset)))
+      ]
       | _ -> raise (CompilationError "This cannot happen"))
   in
 
@@ -182,19 +187,27 @@ let rec gen_func_call fname args =
     ) [] regs
   in
 
+  let gen_call_site name =
+    if Funcmap.lookup_name name
+      then [Call (Op_label name)]
+      else 
+        gen_ident_getter name @ (* It's certainly not a global func :) *)
+        [Call (Op_reg `RAX)]
+  in
+
   let gen_func_call' (name : name) (callee_args : c_exp list) =
     let caller_args = (Stack.topFrame()).args in
     let caller_args_n = List.length caller_args in
 
-    gen_save_caller_regs caller_args_n @
-    gen_args_passing callee_args  @
-    [Call name] @
+    gen_save_caller_regs caller_args_n    @
+    gen_args_passing callee_args          @
+    gen_call_site name                    @
     gen_restore_caller_regs caller_args_n
   in
 
   match fname with
   | Ident(name) -> (match name with
-    | "inc" | "dec" | "is_zero" | "not" 
+    | "inc" | "dec" | "is_zero" | "not" | "head" | "tail"
     | "is_null" | "is_int" | "is_bool" -> gen_unar name args
     | "+" | "-" | "*" | "/" | "==" | ">" -> gen_bin_op name args
     | ":" -> gen_func_call' "ULTRA_cons" args
@@ -223,6 +236,10 @@ and gen_let_expr (name : name) (value : c_exp) (body : c_exp) =
   prologue @ body_evaluated @ epilogue
 
 and gen_if_expr (cond : c_exp) (exp_true : c_exp) (exp_false : c_exp) =
+  let string_of_jmp_label id =
+    Printf.sprintf "L%d" id
+  in
+
   let cond_evaluated      = gen_expr cond      in
   let exp_true_evaluated  = gen_expr exp_true  in
   let exp_false_evaluated = gen_expr exp_false in
@@ -231,16 +248,32 @@ and gen_if_expr (cond : c_exp) (exp_true : c_exp) (exp_false : c_exp) =
   cond_evaluated
   @
   [ Cmp (Op_reg `RAX, Op_immid (bool_to_immid false));
-    Je  (Op_label label1) ]
+    Je  (Op_label (string_of_jmp_label label1)) ]
   @
   exp_true_evaluated
   @
-  [ Jmp (Op_label label2);
+  [ Jmp (Op_label (string_of_jmp_label label2));
     Label label1 ]
   @
   exp_false_evaluated
   @
   [ Label label2 ]
+
+and gen_ident_getter name =
+  let gen_loc_var_getter() =
+    let var_place = Stack.get_local_var_place name in
+    [
+      Mov (Op_reg `RAX, var_place)
+    ]
+  in
+  let gen_get_global_func_address =
+    [
+      Lea (Op_reg `RAX, Op_mem_ptr (FromLabel name))
+    ]
+  in
+  if Funcmap.lookup_name name 
+    then gen_get_global_func_address
+    else gen_loc_var_getter()
 
 and gen_func_prologue =
   [
@@ -262,7 +295,7 @@ and gen_function (name : name) (args : name list) (ast : c_exp) ~global : unit =
   Funcmap.add_func name instrs global
 
 and gen_expr = function
-  | Ident name -> gen_loc_var_getter name
+  | Ident name -> gen_ident_getter name
   | Literal (Fixnum num) -> gen_fixnum num
   | Literal (Boolean b)  -> gen_bool b
   | Literal (Nil)        -> gen_nil ()

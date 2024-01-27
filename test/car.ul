@@ -1,0 +1,6 @@
+fn test nothing =
+    let lst1 = [1,2,3,4] in
+    let lst2 = [4,3]     in
+    [head(lst1), head(lst2)];;
+
+test(nothing);;
