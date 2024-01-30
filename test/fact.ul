@@ -1,5 +1,3 @@
-val n = 15;;
-
 fn testDec x =
 	x - 1
 ;;
@@ -10,4 +8,4 @@ fn factorial num =
 		else num * factorial(testDec(num))
 ;;
 
-factorial(n);;
+factorial(15);;

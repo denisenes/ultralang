@@ -1,21 +1,21 @@
 fn map f xs = cond
     | is_nil(xs) => xs
     | #True      => 
-        let hd = car(xs) in
-        let tl = cdr(xs) in
+        let hd = head(xs) in
+        let tl = tail(xs) in
         f(hd) : map(f, tl)
     endcond
 ;;
 
 fn sum_list xs acc = cond
     | is_nil(xs) => acc
-    | #True => sum_list(cdr(xs), acc + car(xs))
+    | #True => sum_list(cdr(xs), acc + head(xs))
     endcond
 ;;
 
 fn test_map nothing =
-    let lst1 = [1,2,3,4,5] in
-    let lst2 = map((lam x = x * x), lst1) in
+    let lst1 = [1, 2, 3, 4, 5] in
+    let lst2 = map((fn x => x * x), lst1) in
     sum_list(lst2, 0)
 ;;
 

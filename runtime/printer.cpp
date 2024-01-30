@@ -13,7 +13,7 @@ std::string consToString(UL_value v) {
 
 std::string valueToString(UL_value v) {
 	if (is_fixnum(v)) {
-		int64_t int_value = ((int64_t) fixnum_to_int(v));
+		int64_t int_value = fixnum_to_int(v);
 		return std::to_string(int_value);
 	} else if (is_bool(v)) {
 		if (bool_to_int(v)) {

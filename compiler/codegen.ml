@@ -167,7 +167,7 @@ let rec gen_func_call fname args =
           acc
         in
         (i + 1, instrs)
-        ) (0, []) args
+      ) (0, []) args
     in res
   in
 
@@ -188,10 +188,10 @@ let rec gen_func_call fname args =
   in
 
   let gen_call_site name =
-    if Funcmap.lookup_name name
-      then [Call (Op_label name)]
-      else 
-        gen_ident_getter name @ (* It's certainly not a global func :) *)
+    match Context.get_binding_type name with
+      | `GlobalFn _ -> [Call (Op_label name)] (* TODO: only when args num == expected*)
+      | _ ->
+        gen_ident_getter name @
         [Call (Op_reg `RAX)]
   in
 
@@ -271,9 +271,10 @@ and gen_ident_getter name =
       Lea (Op_reg `RAX, Op_mem_ptr (FromLabel name))
     ]
   in
-  if Funcmap.lookup_name name 
-    then gen_get_global_func_address
-    else gen_loc_var_getter()
+  match Context.get_binding_type name with
+  | `GlobalFn _ -> gen_get_global_func_address
+  | `Local | `Argument -> gen_loc_var_getter()
+  | _ -> raise (CompilationError "Not implemented yet")
 
 and gen_func_prologue =
   [
@@ -287,12 +288,12 @@ and gen_func_epilogue =
     Ret
   ]
 
-and gen_function (name : name) (args : name list) (ast : c_exp) ~global : unit = 
+and gen_function (name : name) (args : name list) (ast : c_exp) : unit = 
   let _ = Stack.create_new_frame args in
   let instrs' = gen_expr ast in
   let instrs  = gen_func_prologue @ instrs' @ gen_func_epilogue in
   let _ = Stack.destroy_top_frame () in
-  Funcmap.add_func name instrs global
+  Context.add_func name instrs
 
 and gen_expr = function
   | Ident name -> gen_ident_getter name
@@ -308,7 +309,7 @@ and gen_expr = function
 let gen_def_expr (defexpr : hl_entry) : instruction list = 
   match defexpr with
   | HLExp exp -> gen_expr exp
-  | DefFn (name, args, body) -> gen_function name args body ~global:true; []
+  | DefFn (name, args, body) -> gen_function name args body; []
   | _ -> raise (CompilationError "Not implemented yet")
 
 let gen_highelevel_exprs (asts : hl_entry list) : unit =
@@ -317,4 +318,4 @@ let gen_highelevel_exprs (asts : hl_entry list) : unit =
   let main_body =
     gen_func_prologue @ res @ gen_func_epilogue
   in
-  Funcmap.add_func "ultra_entrypoint" main_body true
+  Context.add_func "ultra_entrypoint" main_body

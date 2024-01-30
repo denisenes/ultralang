@@ -1,6 +1,7 @@
 open Shared.Common
 
 open Common
+open Context
 
 let serialize_reg = function
   | `RSP -> "rsp" 
@@ -117,7 +118,10 @@ let serialize_func name body is_global =
   | false -> serialize_private_func name body_serialized
 
 let serialize_all () = 
-  List.fold_left (fun acc (fname, instrs, is_global) ->
-    let func_serialized = serialize_func fname instrs is_global in
-    func_serialized ^ acc
-  ) "" !Funcmap.func_map
+  Context.fold (fun fname maybe_func acc ->
+    match maybe_func with
+    | `GlobalFn instrs -> 
+      let func_serialized = serialize_func fname instrs true in
+      func_serialized ^ acc
+    | _ -> acc
+  ) !context ""

@@ -143,7 +143,7 @@ let rec parse_def_args stream acc =
       check_next_keyword stream "=";
       acc
     end else raise (SyntaxError "Unit literal is in inappropriate place")
-  | "=" -> acc
+  | "=" | "=>" -> acc
   | ident -> check_is_valid_ident ident; parse_def_args stream (acc @ [ident])
 
 let rec parse_call_args stream (acc : c_exp list) : c_exp list =
@@ -262,7 +262,7 @@ and parse_exp stream : c_exp =
     Cond subexps
   else
 
-  if tok = "lambda" || tok = "lam" then
+  if tok = "fn" then
     let args = parse_def_args stream [] in
     let body = parse_infix_exp stream in
     Lambda (args, body)

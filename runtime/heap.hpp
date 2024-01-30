@@ -47,6 +47,16 @@ typedef struct ObjHeader {
 
 // Layout is important, edit carefully
 #pragma pack (8)
+typedef struct Object
+{
+    ObjHeader header;
+    UL_value fields[];
+};
+
+
+// Layout is important, edit carefully
+// Special kind of Object
+#pragma pack (8)
 typedef struct ConsObj {
     ObjHeader header;
     UL_value  car;
@@ -55,14 +65,16 @@ typedef struct ConsObj {
 
 HeapDesc* heapInit();
 
-UL_value   heapAllocCons(UL_value car, UL_value cdr);
+UL_value  heapAllocCons(UL_value car, UL_value cdr);
 
 inline UL_value heapCar(UL_value cons) {
+    assert(is_cons(cons));
     cons = cons & ~(cons_mask);
     return ((ConsObj *) cons)->car;
 }
 
 inline UL_value heapCdr(UL_value cons) {
+    assert(is_cons(cons));
     cons = cons & ~(cons_mask);
     return ((ConsObj *) cons)->cdr;
 }

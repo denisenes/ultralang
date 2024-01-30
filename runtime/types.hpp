@@ -15,7 +15,7 @@ typedef QWORD UL_value;
 #define fixnum_tag   0b00000000
 #define fixnum_shift 2
 #define is_fixnum(f)     ((f & fixnum_mask) == fixnum_tag)
-#define fixnum_to_int(f) (f >> fixnum_shift)
+#define fixnum_to_int(f) (((int64_t) f) >> fixnum_shift)
 
 #define bool_mask  0b1111111
 #define bool_tag   0b0011111

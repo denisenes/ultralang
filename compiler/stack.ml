@@ -111,7 +111,7 @@ let get_local_var_place name : operand =
     let maybe_in_reg = get_arg_place name in
     match maybe_in_reg with
     | Some reg -> Op_reg reg
-    | None -> Funcmap.log_func_map(); raise (CompilationError ("Variable " ^ name ^ " is undefined"))
+    | None -> Context.log_func_map(); raise (CompilationError ("Variable " ^ name ^ " is undefined"))
 ;;
 
 let alloc_label_id () =

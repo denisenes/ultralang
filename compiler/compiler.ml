@@ -31,7 +31,7 @@ let compile asts =
   (* AST -> instructions *)
   Codegen.gen_highelevel_exprs asts;
 
-  Funcmap.log_func_map();
+  Context.log_func_map();
   Printf.printf "\n\n================\n";
 
   (* Emit instructions *)

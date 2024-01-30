@@ -1,0 +1,6 @@
+fn test nothing =
+    let sqr = (fn x => x * x) in
+    apply(fn x y => sqr(x) + sqr(y), 10, 20)
+;;
+
+test(nothing);;

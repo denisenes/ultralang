@@ -1,0 +1,6 @@
+fn test x =
+    let add42 = fn y => x + y in
+    add42(42)
+;;
+
+test(123);;
