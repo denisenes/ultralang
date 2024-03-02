@@ -2,11 +2,16 @@ open Shared.Parser2
 
 open Serializer
 
+let generate_externs () =
+  List.fold_left (fun acc f ->
+    ".extern " ^ f ^ "\n" ^ acc
+  ) "" Common.runtime_bindings
+
 let generate_prologue out_file : unit =
   Printf.fprintf out_file "%s"
   (".intel_syntax noprefix\n\n" ^
-   ".extern ULTRA_runtime_error\n" ^
-  ".text\n")
+  generate_externs()            ^
+  "\n.text\n")
 
 let generate_epilogue out_file : unit = 
   Printf.fprintf out_file "\n"
@@ -16,7 +21,7 @@ let serialize out_file =
   Printf.fprintf out_file "%s\n" serialized
 
 let print_header() =
-  Printf.printf "Ultralang compiler (platform: x64)\n\n"
+  Printf.printf "ULTRA compiler x64\n\n"
 
 let compile asts =
   print_header();
@@ -29,6 +34,7 @@ let compile asts =
   Printf.printf "\n\n================\n";
 
   (* AST -> instructions *)
+  Context.init_context();
   Codegen.gen_highelevel_exprs asts;
 
   Context.log_func_map();

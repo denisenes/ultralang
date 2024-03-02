@@ -89,11 +89,11 @@ List
 Apply
   TODO $ ${INTERPRETER} "apply([[:]], #False, #True);;"
   TODO [#f, #t]
-  $ ${INTERPRETER} "apply((lam x y = x + y), 23, 34);;"
+  $ ${INTERPRETER} "apply((fn x y => x + y), 23, 34);;"
   57
 
 Lambda
-  $ ${INTERPRETER} "val inc = (lambda x = x + 1);; inc(1);;"
+  $ ${INTERPRETER} "val inc = (fn x => x + 1);; inc(1);;"
   2
 
 Define

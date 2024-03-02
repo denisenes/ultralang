@@ -79,7 +79,7 @@ let rec gen_func_call fname args =
         Movzx (Op_reg `RAX, Op_reg `AL)
       ] 
       @ cmp_res_to_bool
-      | "is_null" -> [
+      | "is_nil" -> [
         Cmp  (Op_reg `RAX, Op_immid nil_tag);
         Sete (Op_reg `AL);
         Movzx (Op_reg `RAX, Op_reg `AL)
@@ -190,6 +190,7 @@ let rec gen_func_call fname args =
   let gen_call_site name =
     match Context.get_binding_type name with
       | `GlobalFn _ -> [Call (Op_label name)] (* TODO: only when args num == expected*)
+      | `External   -> [Call (Op_label name)] (* RT call *)
       | _ ->
         gen_ident_getter name @
         [Call (Op_reg `RAX)]
@@ -208,7 +209,7 @@ let rec gen_func_call fname args =
   match fname with
   | Ident(name) -> (match name with
     | "inc" | "dec" | "is_zero" | "not" | "head" | "tail"
-    | "is_null" | "is_int" | "is_bool" -> gen_unar name args
+    | "is_nil" | "is_int" | "is_bool" -> gen_unar name args
     | "+" | "-" | "*" | "/" | "==" | ">" -> gen_bin_op name args
     | ":" -> gen_func_call' "ULTRA_cons" args
     | name -> gen_func_call' name args)
@@ -217,6 +218,7 @@ let rec gen_func_call fname args =
 and gen_let_expr (name : name) (value : c_exp) (body : c_exp) =
   let val_evaluated  = gen_expr value    in
   let _ = Stack.push_local_variable name in
+  let _ = Context.register_local    name in 
   let prologue = val_evaluated @ (* Result is located in RAX *)
     [
       Sub (Op_reg `RSP, Op_immid value_size);
@@ -290,10 +292,12 @@ and gen_func_epilogue =
 
 and gen_function (name : name) (args : name list) (ast : c_exp) : unit = 
   let _ = Stack.create_new_frame args in
+  let _ = Context.register_func name [] in (* Hack for recursion *)
+  List.fold_left (fun _ a -> Context.register_arg a; ()) () args;
   let instrs' = gen_expr ast in
   let instrs  = gen_func_prologue @ instrs' @ gen_func_epilogue in
   let _ = Stack.destroy_top_frame () in
-  Context.add_func name instrs
+  Context.register_func name instrs
 
 and gen_expr = function
   | Ident name -> gen_ident_getter name
@@ -318,4 +322,4 @@ let gen_highelevel_exprs (asts : hl_entry list) : unit =
   let main_body =
     gen_func_prologue @ res @ gen_func_epilogue
   in
-  Context.add_func "ultra_entrypoint" main_body
+  Context.register_func "ultra_entrypoint" main_body

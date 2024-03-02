@@ -8,9 +8,10 @@ open Shared.Common
 type frame_descriptor = {
   mutable rsp_offset    : int; (* rsp = rbp + offset *)
   mutable values        : (string * int) list;
-  mutable label_counter : int;
   args                  : name list
 }
+
+let label_counter : int ref = ref 0
 
 type abstract_stack = frame_descriptor list
 
@@ -19,7 +20,7 @@ let global_stack : abstract_stack ref = ref []
 let create_new_frame args : unit =
   assert (List.length args <= List.length regs_for_int_arguments);
 
-  let new_frame = { rsp_offset=0; values=[]; label_counter=0; args } in
+  let new_frame = { rsp_offset=0; values=[]; args } in
   global_stack := new_frame::!global_stack
 ;;
 
@@ -115,8 +116,7 @@ let get_local_var_place name : operand =
 ;;
 
 let alloc_label_id () =
-  let frame = List.hd !global_stack in
-  let old = frame.label_counter in
-  frame.label_counter <- frame.label_counter + 1;
+  let old = !label_counter in
+  label_counter := !label_counter + 1;
   old
 ;;

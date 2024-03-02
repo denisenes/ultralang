@@ -10,7 +10,8 @@ type int_register =
   `RDX | `EDX | `DX | `DL |
   `RSI | `ESI |
   `RDI | `EDI |
-  `R8D | `R9D
+  `R8D | `R9D |
+  `R15
   ]
 
 type address = [ `Addr of int ]
@@ -86,3 +87,9 @@ let op_is_mem_ptr = function
 let op_is_label = function
   | Op_label _ -> true
   | _ -> false
+
+let runtime_bindings =
+  [
+    "ULTRA_cons";
+    "ULTRA_runtime_error"
+  ]

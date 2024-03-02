@@ -42,7 +42,7 @@ def runtest(name, expected):
 def main():
     data = []
     with open('tests.list.csv', newline='') as tests_file:
-        rdr = csv.reader(tests_file, delimiter=',', quoting=csv.QUOTE_NONE, skipinitialspace=True)
+        rdr = csv.reader(tests_file, delimiter=';', quoting=csv.QUOTE_NONE, skipinitialspace=True)
         for row in rdr:
             data.append([row[0], row[1]])
     

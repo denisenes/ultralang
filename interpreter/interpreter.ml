@@ -54,11 +54,11 @@ let base_env : value env =
   in
   let prim_car = function
     | [Pair (car, _)] -> car
-    | _ -> raise (EvaluationError("(car non-nil-pair)"))
+    | _ -> raise (EvaluationError("(head non-nil-pair)"))
   in
   let prim_cdr = function
     | [Pair (_, cdr)] -> cdr
-    | _ -> raise (EvaluationError("(cdr non-nil-pair)"))
+    | _ -> raise (EvaluationError("(tail non-nil-pair)"))
   in
   let prim_atom = function
     | [Pair (_, _)] -> Boolean(false)
@@ -89,8 +89,8 @@ let base_env : value env =
     ("==", prim_eq_val);
     (":", prim_pair);
     ("list", prim_list);
-    ("car", prim_car);
-    ("cdr", prim_cdr);
+    ("head", prim_car);
+    ("tail", prim_cdr);
     ("atom?", prim_atom);
     ("is_nil", prim_atom);
     ("eq", prim_eq)
