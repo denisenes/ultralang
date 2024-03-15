@@ -1,0 +1,3 @@
+[submodule "ultra-idea-plugin"]
+	path = ultra-idea-plugin
+	url = https://github.com/denisenes/ultra-idea-plugin
