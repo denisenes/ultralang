@@ -40,3 +40,17 @@ exception NotFoundInEnv     of string;;
 exception ValueNotSpecified of string;;
 
 exception CompilationError of string;;
+
+let unar_spec_bindings =
+    [
+        "inc"; "dec"; "is_zero"; "not"; "head"; "tail";
+        "is_nil"; "is_int"; "is_bool"
+    ]
+  
+let bin_spec_bindings =
+    [
+        "+" ; "-" ; "*" ; "/" ; "==" ; ">" 
+    ]
+  
+let spec_bindings =
+    unar_spec_bindings @ bin_spec_bindings

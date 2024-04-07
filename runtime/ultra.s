@@ -2,6 +2,7 @@
 
 .extern ULTRA_runtime_error
 .extern ULTRA_cons
+
 .text
 .global ultra_entrypoint
 .type ultra_entrypoint, @function
@@ -76,8 +77,11 @@ L6:
 	mov rax, 159
 	cmp rax, 31
 	je L4
-	push rsi
-	push rdi
+	mov rax, rdi
+	and rax, -8
+	mov rax, QWORD PTR [rax+16]
+	sub rsp, 8
+	mov QWORD PTR [rsp], rax
 	mov rax, rdi
 	and rax, -8
 	mov rax, QWORD PTR [rax+8]
@@ -86,14 +90,24 @@ L6:
 	mov rax, rsi
 	add rax, QWORD PTR [rsp]
 	add rsp, 8
+	sub rsp, 8
+	mov QWORD PTR [rsp], rax
+	lea rax, [sum_list]
+	sub rsp, 8
+	mov QWORD PTR [rsp], rax
+	push rsi
+	push rdi
+	mov rax, QWORD PTR [rbp-16]
 	mov rsi, rax
-	mov rax, rdi
-	and rax, -8
-	mov rax, QWORD PTR [rax+16]
+	mov rax, QWORD PTR [rbp-8]
 	mov rdi, rax
-	call sum_list
+	mov rax, QWORD PTR [rbp-24]
+	call rax
 	pop rdi
 	pop rsi
+	add rsp, 8
+	add rsp, 8
+	add rsp, 8
 	jmp L5
 L4:
 	push rsi
@@ -154,6 +168,14 @@ L2:
 	mov QWORD PTR [rsp], rax
 	push rsi
 	push rdi
+	mov rax, QWORD PTR [rbp-8]
+	mov rdi, rax
+	mov rax, rdi
+	call rax
+	pop rdi
+	pop rsi
+	sub rsp, 8
+	mov QWORD PTR [rsp], rax
 	push rsi
 	push rdi
 	mov rax, QWORD PTR [rbp-16]
@@ -163,19 +185,24 @@ L2:
 	call map
 	pop rdi
 	pop rsi
-	mov rsi, rax
+	sub rsp, 8
+	mov QWORD PTR [rsp], rax
+	lea rax, [ULTRA_cons]
+	sub rsp, 8
+	mov QWORD PTR [rsp], rax
 	push rsi
 	push rdi
-	mov rax, QWORD PTR [rbp-8]
+	mov rax, QWORD PTR [rbp-32]
+	mov rsi, rax
+	mov rax, QWORD PTR [rbp-24]
 	mov rdi, rax
-	mov rax, rdi
+	mov rax, QWORD PTR [rbp-40]
 	call rax
 	pop rdi
 	pop rsi
-	mov rdi, rax
-	call ULTRA_cons
-	pop rdi
-	pop rsi
+	add rsp, 8
+	add rsp, 8
+	add rsp, 8
 	add rsp, 8
 	add rsp, 8
 	jmp L1

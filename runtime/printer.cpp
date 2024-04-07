@@ -28,5 +28,6 @@ std::string valueToString(UL_value v) {
 	} else {
 		printf("Undefined type of value: %lu\n", (uint64_t) v);
 		fatal("internal error");
+		return "";
 	}
 }

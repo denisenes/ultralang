@@ -21,7 +21,11 @@ def process_comp_err(name):
 def test(name, expected):
     global results
 
-    test_out = subprocess.check_output(['./ultra']).decode('utf-8').rstrip()
+    try:
+        test_out = subprocess.check_output(['./ultra']).decode('utf-8').rstrip()
+    except subprocess.CalledProcessError:
+        test_out = "process died (segfault probably)"
+
     print("=======================")
     print('Name:     ' + name)
     print('Result:   ' + test_out)

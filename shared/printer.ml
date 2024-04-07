@@ -72,4 +72,10 @@ let rec print_env (e : value env) : unit = match e with
 let ast_to_string = function
   | HLExp exp -> "(HLNode<HLExp> " ^ exp_to_string exp 1 ^ ")"
   | DefVal (name, exp) -> "(HLNode<DefVal> " ^ name ^ " " ^ exp_to_string exp 1 ^ ")" 
-  | DefFn (name, args, exp) -> "(HLNode<DefFn> " ^ name ^ "[ " ^ args_to_string args ^ "] " ^ exp_to_string exp 1 
+  | DefFn (name, args, exp) -> "(HLNode<DefFn> " ^ name ^ "[ " ^ args_to_string args ^ "] " ^ exp_to_string exp 1
+
+let print_asts asts : unit =
+  let _ = List.map (fun ast -> 
+    let res = ast_to_string ast in print_endline res
+  ) asts
+  in ()

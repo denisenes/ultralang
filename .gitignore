@@ -1,5 +1,7 @@
 
 .vscode/settings.json
-*/heapdump
+**/heapdump
 runtime/ultra
 doc/reading-list.md
+.idea
+.gdb_history

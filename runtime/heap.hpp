@@ -51,7 +51,7 @@ typedef struct Object
 {
     ObjHeader header;
     UL_value fields[];
-};
+} Object;
 
 
 // Layout is important, edit carefully

@@ -38,17 +38,17 @@ let gen_cons_val_to_addr =
   [And (Op_reg `RAX, Op_immid (lnot cons_mask))]
 
 let gen_spilling reg = 
-  let _ = Stack.push() in
+  let _ = Stack.push "Spilling" in
   [
     Sub (Op_reg `RSP, Op_immid value_size);
     Mov (Op_mem_ptr (FromPlace `RSP), Op_reg reg)
   ]
 
 let gen_stack_remove_top () =
-  Stack.pop();
+  Stack.pop "Clear spilling";
   [Add (Op_reg `RSP, Op_immid value_size)]
 
-let rec gen_func_call fname args =
+let rec gen_func_call (fname : c_exp) (args : c_exp list) =
   let check_args_size args expected = 
     assert (List.length args = expected)
   in
@@ -108,14 +108,14 @@ let rec gen_func_call fname args =
       | "tail" -> gen_cons_val_to_addr @ [
         Mov (Op_reg `RAX, Op_mem_ptr (FromPlaceAddOff (`RAX, cdr_offset)))
       ]
-      | _ -> raise (CompilationError "This cannot happen"))
+      | _ -> raise (CompilationError "Should not reach here"))
   in
 
   let gen_bin_op name args =
     check_args_size args 2;
-    let arg1_evaluated = gen_expr (List.hd args) in
+    let arg1_evaluated = gen_expr (List.nth args 1) in
     let spilling = gen_spilling `RAX in
-    let arg2_evaluated = gen_expr (List.nth args 1) in
+    let arg2_evaluated = gen_expr (List.hd args) in
     let expr_evaluated = (match name with
       | "+" -> [
         Add (Op_reg `RAX, Op_mem_ptr (FromPlace `RSP))
@@ -145,12 +145,15 @@ let rec gen_func_call fname args =
       ] 
       @ cmp_res_to_bool
       | _ -> raise (CompilationError "Not implemented yet")) in
-    List.concat [
-      arg2_evaluated;
-      spilling;
-      arg1_evaluated;
-      expr_evaluated;
+    let clear_spilling = 
       gen_stack_remove_top()
+    in
+    List.concat [
+      arg1_evaluated;
+      spilling;
+      arg2_evaluated;
+      expr_evaluated;
+      clear_spilling
     ]
   in
 
@@ -172,7 +175,7 @@ let rec gen_func_call fname args =
   in
 
   let gen_save_caller_regs (args_n : int) : instruction list =
-    let _ = Stack.pushN args_n in
+    let _ = Stack.pushN args_n "Save caller regs" in
     let regs = take args_n regs_for_int_arguments in
     List.fold_left (fun acc reg ->
       (Push (Op_reg reg)) :: acc
@@ -180,7 +183,7 @@ let rec gen_func_call fname args =
   in
 
   let gen_restore_caller_regs (args_n : int) : instruction list =
-    let _ = Stack.popN args_n in
+    let () = Stack.popN args_n "Restore caller regs"         in
     let regs = List.rev (take args_n regs_for_int_arguments) in
     List.fold_left (fun acc reg ->
       (Pop (Op_reg reg)) :: acc
@@ -200,25 +203,31 @@ let rec gen_func_call fname args =
     let caller_args = (Stack.topFrame()).args in
     let caller_args_n = List.length caller_args in
 
-    gen_save_caller_regs caller_args_n    @
-    gen_args_passing callee_args          @
-    gen_call_site name                    @
-    gen_restore_caller_regs caller_args_n
+    let save_caller_regs    = gen_save_caller_regs caller_args_n    in
+    let args_passing        = gen_args_passing callee_args          in
+    let call_site           = gen_call_site name                    in
+    let restore_caller_regs = gen_restore_caller_regs caller_args_n in
+
+    List.concat [
+      save_caller_regs;
+      args_passing;
+      call_site;
+      restore_caller_regs;
+    ]
   in
 
   match fname with
   | Ident(name) -> (match name with
-    | "inc" | "dec" | "is_zero" | "not" | "head" | "tail"
-    | "is_nil" | "is_int" | "is_bool" -> gen_unar name args
-    | "+" | "-" | "*" | "/" | "==" | ">" -> gen_bin_op name args
+    | _ when List.mem name unar_spec_bindings -> gen_unar name args
+    | _ when List.mem name bin_spec_bindings  -> gen_bin_op name args
     | ":" -> gen_func_call' "ULTRA_cons" args
     | name -> gen_func_call' name args)
   | _ -> raise (CompilationError "Not implemented yet")
 
 and gen_let_expr (name : name) (value : c_exp) (body : c_exp) =
-  let val_evaluated  = gen_expr value    in
-  let _ = Stack.push_local_variable name in
-  let _ = Context.register_local    name in 
+  let val_evaluated = gen_expr value      in
+  let () = Stack.push_local_variable name in
+  let () = Context.register_local    name in 
   let prologue = val_evaluated @ (* Result is located in RAX *)
     [
       Sub (Op_reg `RSP, Op_immid value_size);
@@ -226,10 +235,10 @@ and gen_let_expr (name : name) (value : c_exp) (body : c_exp) =
     ]
   in 
   let body_evaluated = 
-    assert (Option.is_some @@ Stack.get_local_var_offset name);
+    assert (name |> Stack.get_local_var_offset |> Option.is_some);
     gen_expr body
   in
-  let _ = Stack.pop() in
+  let () = Stack.pop "Clear local var" in
   let epilogue = 
     [
       Add (Op_reg `RSP, Op_immid value_size)
@@ -247,6 +256,7 @@ and gen_if_expr (cond : c_exp) (exp_true : c_exp) (exp_false : c_exp) =
   let exp_false_evaluated = gen_expr exp_false in
   let label1 = Stack.alloc_label_id() in
   let label2 = Stack.alloc_label_id() in
+  
   cond_evaluated
   @
   [ Cmp (Op_reg `RAX, Op_immid (bool_to_immid false));
@@ -262,19 +272,21 @@ and gen_if_expr (cond : c_exp) (exp_true : c_exp) (exp_false : c_exp) =
   [ Label label2 ]
 
 and gen_ident_getter name =
+  let name = if name = ":" then "ULTRA_cons" else name in (* TODO generalize *)
+  
   let gen_loc_var_getter() =
     let var_place = Stack.get_local_var_place name in
     [
       Mov (Op_reg `RAX, var_place)
     ]
   in
-  let gen_get_global_func_address =
+  let gen_get_global_func_address() =
     [
       Lea (Op_reg `RAX, Op_mem_ptr (FromLabel name))
     ]
   in
   match Context.get_binding_type name with
-  | `GlobalFn _ -> gen_get_global_func_address
+  | `GlobalFn _ | `External -> gen_get_global_func_address()
   | `Local | `Argument -> gen_loc_var_getter()
   | _ -> raise (CompilationError "Not implemented yet")
 
@@ -291,12 +303,12 @@ and gen_func_epilogue =
   ]
 
 and gen_function (name : name) (args : name list) (ast : c_exp) : unit = 
-  let _ = Stack.create_new_frame args in
-  let _ = Context.register_func name [] in (* Hack for recursion *)
+  let () = Stack.create_new_frame args in
+  let () = Context.register_func name [] in (* Hack for recursion *)
   List.fold_left (fun _ a -> Context.register_arg a; ()) () args;
   let instrs' = gen_expr ast in
   let instrs  = gen_func_prologue @ instrs' @ gen_func_epilogue in
-  let _ = Stack.destroy_top_frame () in
+  let () = Stack.destroy_top_frame () in
   Context.register_func name instrs
 
 and gen_expr = function
@@ -305,15 +317,17 @@ and gen_expr = function
   | Literal (Boolean b)  -> gen_bool b
   | Literal (Nil)        -> gen_nil ()
   | If (cond, exp_true, exp_false) -> gen_if_expr cond exp_true exp_false
-  | Call (fname, args)   -> gen_func_call fname args
   | Let (name, value, body) -> gen_let_expr name value body
+  | Call (fname, args)      -> gen_func_call fname args
   | ShouldNotReachHere code -> gen_func_call (Ident "ULTRA_runtime_error") [Literal(Fixnum code)]
   | _ -> raise (CompilationError "Not implemented yet")
 
 let gen_def_expr (defexpr : hl_entry) : instruction list = 
   match defexpr with
   | HLExp exp -> gen_expr exp
-  | DefFn (name, args, body) -> gen_function name args body; []
+  | DefFn (name, args, body) -> 
+    Printf.printf "Translating %s...\n" name; 
+    gen_function name args body; []
   | _ -> raise (CompilationError "Not implemented yet")
 
 let gen_highelevel_exprs (asts : hl_entry list) : unit =

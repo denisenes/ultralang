@@ -2,6 +2,8 @@ open Common
 
 open Shared.Common
 
+let debug = false
+
 (* It's not an honest simulation of stack *)
 (* This is supposed to save function frame context when
    compiler moves to codegen of nested function definition *)
@@ -39,16 +41,18 @@ let topFrame () : frame_descriptor =
     * Substruction from RSP
     * Using push instructions
 *)
-let pushN num =
+let pushN num msg =
   match !global_stack with
   | [] -> raise (CompilationError "No frame descriptor")
   | (frame::_) ->
     frame.rsp_offset <- frame.rsp_offset + (value_size * num);
+    if debug then
+      Printf.printf "Push (_, %d) %s\n" frame.rsp_offset msg;
     frame.rsp_offset
 ;;
 
-let push () = 
-  pushN 1
+let push msg = 
+  pushN 1 msg
 ;;
 
 (* 
@@ -58,26 +62,38 @@ let push () =
     * Addition to RSP
     * Using pop instructions
 *)
-let popN num =
+let popN num msg =
   match !global_stack with
   | [] -> raise (CompilationError "No frame descriptor")
   | (frame::_) ->
+    (* assert (frame.rsp_offset > 0); *)
     frame.rsp_offset <- frame.rsp_offset - (value_size * num);
-    ()
+    if debug then 
+      Printf.printf "Pop (_, %d) %s\n" frame.rsp_offset msg;
+    assert (frame.rsp_offset >= 0)
 ;;
 
-let pop () =
-  popN 1
+let pop msg =
+  popN 1 msg
 ;;
 
 let push_local_variable name =
-  let index = push() in
+  let offset = push "Place local var" in
   let frame = List.hd (!global_stack) in
-  frame.values <- (name, index)::frame.values
+  frame.values <- (name, offset)::frame.values;
+  if debug then
+    Printf.printf "Push loc (%s, %d)\n" name offset
 ;;
+
+let print_values frame =
+  List.fold_left (fun _ (name, off) ->
+    Printf.printf "Get  loc (%s, %d)\n" name off
+  ) () frame.values
 
 let get_local_var_offset name : int option =
   let frame = List.hd (!global_stack) in
+  if debug then
+    print_values frame;
   let maybe_offset = List.find_opt (fun (name', _) -> name = name') frame.values in
   match maybe_offset with
   | None -> None

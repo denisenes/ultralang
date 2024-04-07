@@ -23,16 +23,7 @@ let serialize out_file =
 let print_header() =
   Printf.printf "ULTRA compiler x64\n\n"
 
-let compile asts =
-  print_header();
-
-  Printf.printf "AST:\n";
-  let _ = List.map (fun ast -> 
-    let res = Shared.Printer.ast_to_string ast in print_endline res
-  ) asts
-  in
-  Printf.printf "\n\n================\n";
-
+let translate asts =
   (* AST -> instructions *)
   Context.init_context();
   Codegen.gen_highelevel_exprs asts;
@@ -48,12 +39,24 @@ let compile asts =
   ();;
 
 let compiler src_path =
+  print_header();
+
   let asts = parse_from_file src_path in
+  
+  Printf.printf "ASTs:\n";
+  Shared.Printer.print_asts asts;
+  Printf.printf "\n\n================\n";
+
   let lowered_asts = List.map
-    (fun ast -> Shared.Asttransform.lower_hl_entry ast) asts 
+    (fun ast -> Shared.Asttransform.lower_hl_entry ast) asts
   in
-  compile lowered_asts
+
+  Printf.printf "Lowered ASTs:\n";
+  Shared.Printer.print_asts lowered_asts;
+  Printf.printf "\n\n================\n";
+
+  translate lowered_asts
 
 let compiler_test src =
   let asts = parse_from_string src in
-  compile asts
+  translate asts

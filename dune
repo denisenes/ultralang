@@ -8,4 +8,5 @@
  (public_name main)
  (name main)
  (libraries interpreter compiler)
+ (modes byte exe)
  )
