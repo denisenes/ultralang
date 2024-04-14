@@ -1,5 +1,4 @@
 open Shared.Common
-open Shared.Utility
 
 open Common
 
@@ -174,20 +173,24 @@ let rec gen_func_call (fname : c_exp) (args : c_exp list) =
     in res
   in
 
-  let gen_save_caller_regs (args_n : int) : instruction list =
-    let _ = Stack.pushN args_n "Save caller regs" in
-    let regs = take args_n regs_for_int_arguments in
-    List.fold_left (fun acc reg ->
-      (Push (Op_reg reg)) :: acc
-    ) [] regs
+  let gen_save_caller_regs (args : name list) : instruction list =
+    List.fold_left (fun acc arg ->
+      Stack.push_local_variable arg;
+      match Stack.get_arg_place arg with
+      | Some reg -> acc @ [Push (Op_reg reg)]
+      | _ -> raise (CompilationError "Cannot save caller argument")
+    ) [] args
   in
 
-  let gen_restore_caller_regs (args_n : int) : instruction list =
-    let () = Stack.popN args_n "Restore caller regs"         in
-    let regs = List.rev (take args_n regs_for_int_arguments) in
-    List.fold_left (fun acc reg ->
-      (Pop (Op_reg reg)) :: acc
-    ) [] regs
+  let gen_restore_caller_regs (args : name list) : instruction list =
+    let args_n = List.length args                    in
+    let () = Stack.popN args_n "Restore caller regs" in
+    List.fold_left (fun acc arg ->
+      Stack.pop_local_variable arg;
+      match Stack.get_arg_place arg with
+      | Some reg -> (Pop (Op_reg reg)) :: acc
+      | _ -> raise (CompilationError "Cannot restore caller argument")
+    ) [] args
   in
 
   let gen_call_site name =
@@ -201,12 +204,11 @@ let rec gen_func_call (fname : c_exp) (args : c_exp list) =
 
   let gen_func_call' (name : name) (callee_args : c_exp list) =
     let caller_args = (Stack.topFrame()).args in
-    let caller_args_n = List.length caller_args in
 
-    let save_caller_regs    = gen_save_caller_regs caller_args_n    in
-    let args_passing        = gen_args_passing callee_args          in
-    let call_site           = gen_call_site name                    in
-    let restore_caller_regs = gen_restore_caller_regs caller_args_n in
+    let save_caller_regs    = gen_save_caller_regs caller_args    in
+    let args_passing        = gen_args_passing callee_args        in
+    let call_site           = gen_call_site name                  in
+    let restore_caller_regs = gen_restore_caller_regs caller_args in
 
     List.concat [
       save_caller_regs;

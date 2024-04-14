@@ -95,28 +95,28 @@ L6:
 	lea rax, [sum_list]
 	sub rsp, 8
 	mov QWORD PTR [rsp], rax
-	push rsi
 	push rdi
+	push rsi
 	mov rax, QWORD PTR [rbp-16]
 	mov rsi, rax
 	mov rax, QWORD PTR [rbp-8]
 	mov rdi, rax
 	mov rax, QWORD PTR [rbp-24]
 	call rax
-	pop rdi
 	pop rsi
+	pop rdi
 	add rsp, 8
 	add rsp, 8
 	add rsp, 8
 	jmp L5
 L4:
-	push rsi
 	push rdi
+	push rsi
 	mov rax, 0
 	mov rdi, rax
 	call ULTRA_runtime_error
-	pop rdi
 	pop rsi
+	pop rdi
 L5:
 L7:
 	pop rbp
@@ -166,40 +166,40 @@ L2:
 	mov rax, QWORD PTR [rax+16]
 	sub rsp, 8
 	mov QWORD PTR [rsp], rax
-	push rsi
 	push rdi
+	push rsi
 	mov rax, QWORD PTR [rbp-8]
 	mov rdi, rax
-	mov rax, rdi
+	mov rax, QWORD PTR [rbp-24]
 	call rax
-	pop rdi
 	pop rsi
+	pop rdi
 	sub rsp, 8
 	mov QWORD PTR [rsp], rax
-	push rsi
 	push rdi
+	push rsi
 	mov rax, QWORD PTR [rbp-16]
 	mov rsi, rax
-	mov rax, rdi
+	mov rax, QWORD PTR [rbp-32]
 	mov rdi, rax
 	call map
-	pop rdi
 	pop rsi
+	pop rdi
 	sub rsp, 8
 	mov QWORD PTR [rsp], rax
 	lea rax, [ULTRA_cons]
 	sub rsp, 8
 	mov QWORD PTR [rsp], rax
-	push rsi
 	push rdi
+	push rsi
 	mov rax, QWORD PTR [rbp-32]
 	mov rsi, rax
 	mov rax, QWORD PTR [rbp-24]
 	mov rdi, rax
 	mov rax, QWORD PTR [rbp-40]
 	call rax
-	pop rdi
 	pop rsi
+	pop rdi
 	add rsp, 8
 	add rsp, 8
 	add rsp, 8
@@ -207,13 +207,13 @@ L2:
 	add rsp, 8
 	jmp L1
 L0:
-	push rsi
 	push rdi
+	push rsi
 	mov rax, 0
 	mov rdi, rax
 	call ULTRA_runtime_error
-	pop rdi
 	pop rsi
+	pop rdi
 L1:
 L3:
 	pop rbp

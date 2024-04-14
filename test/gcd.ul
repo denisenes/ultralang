@@ -1,10 +1,12 @@
-val a = 125 ;;
-val b = 1025;;
-
 fn gcd a b c =
         if (((a % c) == 0) && ((b % c) == 0))
                 then c
                 else gcd(a, b, c - 1)
 ;;
 
-gcd(a, b, b);;
+fn test nothing =
+        let a = 125  in
+        let b = 1025 in
+        gcd(a, b, b);;          
+
+test(nothing);;
