@@ -21,7 +21,7 @@ let rec exp_to_string (node : c_exp) (lvl : int) : string =
     (tab lvl) ^ "(Node<Apply> " ^ exp_to_string func (lvl+1) ^ (* ast_to_string e (lvl+1) ^ *) (tab lvl) ^ ")"
   | Call(func, args) -> 
     let string_args = (String.concat " " (List.map (fun x -> exp_to_string x (lvl+1)) args)) in
-    (tab lvl) ^ "(Node<Call> " ^ exp_to_string func (lvl+1) ^ string_args ^ (tab lvl) ^ ")"
+    (tab lvl) ^ "(Node<Call> " ^ func ^ " " ^ string_args ^ (tab lvl) ^ ")"
   | Lambda (args, body) -> 
     (tab lvl) ^ "(Node<Lambda> " ^ args_to_string args ^ exp_to_string body (lvl+1) ^ (tab lvl) ^ ")"
   | Let (var_name, var_val, body) -> 
@@ -34,7 +34,7 @@ let rec exp_to_string (node : c_exp) (lvl : int) : string =
 and value_to_string (sexpr : value) : string =
   match sexpr with
     | Fixnum(value)  -> string_of_int value
-    | Boolean(b) -> if b then "#t" else "#f"
+    | Boolean(b) -> if b then "#True" else "#False"
     | Symbol(name) -> name
     | Pair(_ , _) -> 
       "[" ^

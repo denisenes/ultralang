@@ -3,6 +3,7 @@ open Shared.Common
 (* open Shared.Utility *)
 open Shared.Printer
 open Shared.Asttransform
+open Shared.Typechecker
 
 open Lispenv
 
@@ -113,8 +114,8 @@ and eval_expr expr env =
       eval_expr' if_false
     | If _ -> raise (EvaluationError "(if bool sexpr sexpr)")
     (* | Apply (func, exprs) -> eval_apply (eval_expr' func) (list_of_pairs (eval_expr' exprs)) *)
-    | Call (Ident "env", []) -> print_env env; Boolean true
-    | Call (expr, exprs) -> eval_apply (eval_expr' expr) (List.map eval_expr' exprs)
+    | Call ("env", []) -> print_env env; Boolean true
+    | Call (fname, exprs) -> eval_apply (eval_expr' (Ident fname)) (List.map eval_expr' exprs)
     | Lambda (args, body) -> Closure (args, body, env)
     | Let (var_name, var_val, body) -> 
       let env' = bind (var_name, eval_expr' var_val, env) in
@@ -146,7 +147,8 @@ and eval_fndef name arg_names body env =
     (clo, bindloc (name, loc, env))
 
 let executor (source : string) : unit =
-  let asts = parse_from_string source in
+  let asts        = parse_from_string source     in
+  let (tpes, _)           = infer_program asts   in
   let lowered_ast = List.map lower_hl_entry asts in
 
   let last_env : value env ref = ref base_env in (* needed to forward env through hl exprressions during evaluation *)
@@ -156,6 +158,8 @@ let executor (source : string) : unit =
     lowered_ast
   in
   let _ = print_value (values |> List.rev |> List.hd) in
+  let _ = List.iter 
+    (fun t -> Printf.printf "%s\n" (type_to_string t)) tpes in
   ();;
 
 let rec loop stream env =
@@ -163,6 +167,7 @@ let rec loop stream env =
   flush stdout;
   (* Read *)
   let ast = parse_hl_exp stream in
+  let (tpe, _) = Shared.Typechecker.infer_one_hl ast in
   let lowered_ast = lower_hl_entry ast in
   print_endline ("AST: " ^ ast_to_string lowered_ast);
   (* Eval *)
@@ -170,6 +175,8 @@ let rec loop stream env =
   (* Print *)
   print_string "< ";
   print_value value;
+  print_string "Type: ";
+  Shared.Typechecker.type_to_string tpe |> print_endline;
   (* Loop *)
   loop stream env'
 

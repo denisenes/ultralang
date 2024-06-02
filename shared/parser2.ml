@@ -276,7 +276,7 @@ and parse_exp stream : c_exp =
       begin
       eat_whitespaces stream;
       match read_char stream with
-      | ')' -> Call (Ident tok, args)
+      | ')' -> Call (tok, args)
       | _ -> raise (SyntaxError "Incorrect function call syntax")
       end
     | _ -> unread_char stream ch; Ident tok
@@ -294,7 +294,7 @@ and parse_infix_exp stream =
   let tok = read_token stream false in
   if is_infix_op tok then
     let exp2 = parse_exp stream in
-    Call (Ident tok, [exp1; exp2])
+    Call (tok, [exp1; exp2])
   else begin
     unread_token stream tok; 
     exp1

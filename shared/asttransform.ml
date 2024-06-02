@@ -16,16 +16,15 @@ let rec lower_cond subexps =
 and lower_list_literal exps =
   match exps with
   | [] -> Literal Nil
-  | (exp::tail) -> Call (Ident ":", [lower_ast exp; lower_list_literal tail])
+  | (exp::tail) -> Call (":", [lower_ast exp; lower_list_literal tail])
 
 (* A-normalize function call *)
-and normalize_call funcexp args =
+and normalize_call fname args =
   let temps = List.map (fun _ -> get_tmp_cnt()) args in
   let rec normalize_call' arg_acc = function
     | [] -> 
-      let ftmp    = get_tmp_cnt() in
       let newargs = List.map (fun arg -> Ident arg) temps in
-      Let (ftmp, lower_ast funcexp, Call (Ident ftmp, newargs))
+      Call (fname, newargs)
     | (t::acc) -> 
       match arg_acc with
       | [] -> raise (CompilationError "Should not reach here")
@@ -39,7 +38,7 @@ and normalize_call funcexp args =
  * - All argumets are primitive
  * TODO: make this predicate more precise 
  *)
-and should_be_normalized funcexp args =
+and should_be_normalized fname args =
   let rec all_args_primitive = function
     | [] -> true
     | (Literal _ :: tl) -> all_args_primitive tl
@@ -47,14 +46,13 @@ and should_be_normalized funcexp args =
     | _ -> false
   in
   not (all_args_primitive args) &&
-  match funcexp with
-  | Ident name when List.mem name Common.spec_bindings ->
-    false
+  match fname with
+  | name when List.mem name Common.spec_bindings -> false
   | _ -> true
 
 and lower_ast = function
   (* Lowered nodes *)
-  | Call (Ident "apply", args) ->
+  | Call ("apply", args) ->
     Apply (lower_ast @@ List.hd args, List.map lower_ast (List.tl args))
   | Call (funcexp, args) 
     when should_be_normalized funcexp args ->
@@ -73,8 +71,8 @@ and lower_ast = function
     Apply (lower_ast funcexp, List.map lower_ast args)
   | Lambda (argnames, exp) ->
     Lambda (argnames, lower_ast exp)
-  | Call (funcexp, args) ->
-    Call (lower_ast funcexp, List.map lower_ast args)
+  | Call (fname, args) ->
+    Call (fname, List.map lower_ast args)
 
 let lower_hl_entry = function
   | DefVal (name, exp) -> DefVal (name, lower_ast exp)

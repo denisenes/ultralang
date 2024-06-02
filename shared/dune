@@ -1,4 +1,4 @@
 (library
  (name shared)
  (libraries core)
- (modules common utility printer parser2 asttransform))
+ (modules common utility printer parser2 asttransform typechecker))

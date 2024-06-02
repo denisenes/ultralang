@@ -47,7 +47,7 @@ let gen_stack_remove_top () =
   Stack.pop "Clear spilling";
   [Add (Op_reg `RSP, Op_immid value_size)]
 
-let rec gen_func_call (fname : c_exp) (args : c_exp list) =
+let rec gen_func_call (fname : name) (args : c_exp list) =
   let check_args_size args expected = 
     assert (List.length args = expected)
   in
@@ -219,12 +219,10 @@ let rec gen_func_call (fname : c_exp) (args : c_exp list) =
   in
 
   match fname with
-  | Ident(name) -> (match name with
-    | _ when List.mem name unar_spec_bindings -> gen_unar name args
-    | _ when List.mem name bin_spec_bindings  -> gen_bin_op name args
+    | _ when List.mem fname unar_spec_bindings -> gen_unar   fname args
+    | _ when List.mem fname bin_spec_bindings  -> gen_bin_op fname args
     | ":" -> gen_func_call' "ULTRA_cons" args
-    | name -> gen_func_call' name args)
-  | _ -> raise (CompilationError "Not implemented yet")
+    | name -> gen_func_call' name args
 
 and gen_let_expr (name : name) (value : c_exp) (body : c_exp) =
   let val_evaluated = gen_expr value      in
@@ -321,7 +319,7 @@ and gen_expr = function
   | If (cond, exp_true, exp_false) -> gen_if_expr cond exp_true exp_false
   | Let (name, value, body) -> gen_let_expr name value body
   | Call (fname, args)      -> gen_func_call fname args
-  | ShouldNotReachHere code -> gen_func_call (Ident "ULTRA_runtime_error") [Literal(Fixnum code)]
+  | ShouldNotReachHere code -> gen_func_call "ULTRA_runtime_error" [Literal(Fixnum code)]
   | _ -> raise (CompilationError "Not implemented yet")
 
 let gen_def_expr (defexpr : hl_entry) : instruction list = 

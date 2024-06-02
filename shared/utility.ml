@@ -55,3 +55,26 @@ let rec take n lst =
     match n with
     | 0 -> []
     | _ -> x :: take (n-1) xs)
+
+
+(* Couldn't find something like that in stdlib :( *)
+let from_opt (default : 'a) (opt : 'a option) : 'a =
+  match opt with
+  | None   -> default
+  | Some v -> v
+
+module ExtSyntax = struct
+
+  type    bool_exp = BoolExp of bool
+  type 'a case_exp = Case    of bool_exp * 'a 
+
+  let rec cond (exps : 'a case_exp list) =
+    match exps with
+    | [] -> raise @@ InternalError ("Cond error")
+    | Case (BoolExp bexp, exp)::tail -> if bexp then exp else cond tail
+
+  let otherwise : bool_exp = BoolExp true
+  let case (exp : bool) : bool_exp = BoolExp exp
+  let ( => ) (exp1 : bool_exp) (exp2 : 'a) = Case (exp1, exp2)
+
+end
