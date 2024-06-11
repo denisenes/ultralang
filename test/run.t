@@ -89,8 +89,10 @@ If expression
 Cons
   $ ${INTERPRETER} "123 : (321 : []);;"
   [123, 321]
+  Int
   $ ${INTERPRETER} "(100 * 10) : ((100 / 10) : []);;"
   [1000, 10]
+  Int
 
 Call
   $ ${INTERPRETER} "$(cat call3.ul)"
@@ -102,14 +104,26 @@ Call
 Val
   $ ${INTERPRETER} "val a = 300;;"
   300
+  Int
   $ ${INTERPRETER} "val a = 321 - 21;;"
   300
+  Int
 
 List
   $ ${INTERPRETER} "[1, 2, 3, 4, 5];;"
   [1, 2, 3, 4, 5]
+  List(Int)
   $ ${INTERPRETER} "[1, #False, 2, #True];;"
-  [1, #False, 2, #True]
+  Fatal error: exception Shared.Common.TypeCheckError("Can't unify types: t1=Int with t2=Bool")
+  [2]
+  $ ${INTERPRETER} "$(cat car.ul)"
+  [1, 4]
+  ([] -> List(Int))
+  List(Int)
+  $ ${INTERPRETER} "$(cat cdr.ul)"
+  [[2, 3, 4], [3]]
+  ([] -> List(List(Int)))
+  List(List(Int))
 
 Apply
   TODO $ ${INTERPRETER} "apply([[:]], #False, #True);;"
@@ -120,6 +134,12 @@ Apply
 Lambda
   $ ${INTERPRETER} "val inc = (fn x = x + 1);; inc(1);;"
   2
+  ([Int] -> Int)
+  Int
+  $ ${INTERPRETER} "$(cat lam2.ul)"
+  165
+  ([Int] -> Int)
+  Int
 
 Define
   $ ${INTERPRETER} "fn inc x = x + 1;; inc(10);;"
@@ -158,6 +178,15 @@ Factorial
 Fibonacci
   $ ${INTERPRETER} "$(cat fibonacci.ul)"
   987
+
+Combinators (trivial test of polymorphic functions)
+  $ ${INTERPRETER} "$(cat combinators.ul)"
+  0
+  ([T2] -> T2)
+  ([T6 T7] -> T6)
+  ([([T14 T15] -> T16) ([T14] -> T15) T14] -> T16)
+  ([] -> Int)
+  Int
 
 Gcd
   $ ${INTERPRETER} "$(cat gcd.ul)"

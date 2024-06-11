@@ -1,0 +1,25 @@
+fn fibonacci n = 
+    cond
+	| n == 0 => 1
+	| n == 1 => 1
+	| n >  1 => fibonacci(n - 1) + fibonacci(n - 2)
+	endcond;;
+
+fn odd num =
+    if (num % 2) == 0 then #False else #True;;
+
+fn sum_odd_fibonacci num = 
+    cond
+    | n == 1 => 1
+    | odd(fibonacci(num)) =>
+        fibonacci(num) + sum_odd_fibonacci(num - 1)
+    | #True => sum_odd_fibonacci(n - 1)
+    endcond;;
+
+fn fibonacci_tr0 n x1 x2 =
+    cond
+    | n == 0 => x1
+    | #True  => fibonacci_tr0(n - 1, x2, x1 + x2)
+    endcond;; 
+
+fn fibonacci_tr num = fibonacci_tr0(num, 0, 1);;

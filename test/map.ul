@@ -1,26 +1,24 @@
 fn sqr x =
-    x * x
-;;
+    x * x;;
 
 fn map f xs = cond
     | is_nil(xs) => xs
-    | #True      => 
+    | #True      =>
         let hd = head(xs) in
         let tl = tail(xs) in
         f(hd) : map(f, tl)
-    endcond
-;;
+    endcond;;
 
 fn sum_list xs acc = cond
     | is_nil(xs) => acc
-    | #True => sum_list(tail(xs), acc + head(xs))
-    endcond
-;;
+    | #True      => sum_list(tail(xs), acc + head(xs))
+    endcond;;
 
 fn test_map nothing =
     let lst1 = [1, 2, 3, 4, 5] in
-    let lst2 = map(sqr, lst1) in
-    sum_list(lst2, 0)
-;;
+    let lst2 = map(sqr, lst1)  in
+    sum_list(lst2, 0);;
 
 test_map(nothing);;
+
+fn id x = x;;

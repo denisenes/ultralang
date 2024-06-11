@@ -1,5 +1,6 @@
 open Common
 open Printer
+open Utility
 (* open Utility.ExtSyntax *)
 
 (* term variable -> type scheme *)
@@ -7,7 +8,7 @@ module Context = Map.Make(String)
 (* type variable -> type *)
 module Substs  = Map.Make(String)
 
-let debug = false
+let debug = true
 
 let rec type_to_string = 
   let args_to_string args =
@@ -18,7 +19,7 @@ let rec type_to_string =
   function
   | `TyBool   -> "Bool"
   | `TyInt    -> "Int"
-  | `TyList a -> Printf.sprintf "[%s]" @@ type_to_string a
+  | `TyList a -> Printf.sprintf "List(%s)" @@ type_to_string a
   | `TyFun (args, retpe) -> 
     Printf.sprintf "([%s] -> %s)" (args_to_string args) (type_to_string retpe)
   | `TyVar a  -> a
@@ -115,7 +116,17 @@ let instantiate (schm : ty_scheme) : ty =
   let subst = Substs.of_list (List.combine vars new_tvs) in
   subst *> tpe
 
-let rec infer_call ctx fname args : ty * ty Substs.t =
+let rec infer_list_lit ctx exps =
+  let infered        = List.map (fun e -> infer ctx e) exps in
+  let (tpes, substs) = UList.unzip infered in
+  let combined_subst = compose_subs substs in
+  let tpes           = List.map (fun t -> combined_subst *> t) tpes in
+  let (combined_subst, _) = List.fold_left 
+    (fun (acc, pt) t -> (acc <*> (unify pt t), t)) 
+    (combined_subst, new_ty_var()) tpes in
+  (`TyList (combined_subst *> (List.hd tpes)), combined_subst)
+
+and infer_call ctx fname args : ty * ty Substs.t =
   let template = match spec_binding_ty fname with
     | Some scm -> scm
     | None     -> Context.find fname ctx
@@ -172,6 +183,8 @@ and infer ctx exp : ty * ty Substs.t =
     match exp with
     | Literal (Fixnum _)   -> (`TyInt,  Substs.empty)
     | Literal (Boolean _)  -> (`TyBool, Substs.empty)
+    | Literal Nil          -> (`TyList (new_ty_var()), Substs.empty)
+    | ListLiteral exps     -> infer_list_lit ctx exps
     | Ident var            -> (
       match Context.find_opt var ctx with
       | None -> raise @@ TypeCheckError ("Unbound variable " ^ var)
@@ -196,11 +209,11 @@ and infer ctx exp : ty * ty Substs.t =
       (subst_to_string substs);
   (tpe, substs)
 
-let generalize _ tpe : ty_scheme =
+let generalize _ tpe : ty_scheme = 
   Scheme (free_vars tpe, tpe)
 
 let infer_hl ctx hl_entry : (ty * ty Substs.t) * ty_scheme Context.t = 
-  match hl_entry with
+  let ((tpe_res, subst_res), ctx') = match hl_entry with
   | HLExp exp -> (infer ctx exp, ctx)
   | DefFn (fname, args, body) ->
     (* Construct scheme with fresh type variables *)
@@ -212,7 +225,17 @@ let infer_hl ctx hl_entry : (ty * ty Substs.t) * ty_scheme Context.t =
     (* Generalize final func type and add to context *)
     let res_scheme = generalize ctx tpe in
     ((tpe, substs), Context.add fname res_scheme ctx)
-  | _ -> raise (TypeCheckError "Not supported yet")
+  | DefVal (name, exp) ->
+    let (tpe, s) = infer ctx exp in
+    let ctx' = Context.add name (Scheme ([], tpe)) ctx in
+    ((tpe, s), ctx') 
+  in
+  if debug then
+    Printf.printf "%s : %s with %s\n" 
+      (ast_to_string hl_entry) 
+      (type_to_string tpe_res)
+      (subst_to_string subst_res);
+  ((tpe_res, subst_res), ctx')
 
 let infer_one_hl hl_entry : ty * ty_scheme Context.t =
   let ctx_init = (Context.empty : ty_scheme Context.t) in

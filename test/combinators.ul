@@ -1,0 +1,12 @@
+fn i x = x;;
+
+fn k x y = x;;
+
+fn s x y z = x(z, y(z));;
+
+fn test1 nothing =
+    let add = (fn x y = x + y) in
+    let neg = (fn x   = 0 - x) in
+    s(add, i(neg), k(10, 20));;
+
+test1(nothing);;

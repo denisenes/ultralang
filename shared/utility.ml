@@ -47,21 +47,31 @@ let pretty_bool = function
   | true  -> "true"
   | false -> "false"
 
-let rec take n lst = 
-  match lst with
-  | [] when n > 0 -> raise (Failure "Take expected longer list")
-  | [] -> []
-  | (x::xs) -> (
-    match n with
-    | 0 -> []
-    | _ -> x :: take (n-1) xs)
-
-
 (* Couldn't find something like that in stdlib :( *)
 let from_opt (default : 'a) (opt : 'a option) : 'a =
   match opt with
   | None   -> default
   | Some v -> v
+
+
+module UList = struct
+
+  let rec take n lst = 
+    match lst with
+    | [] when n > 0 -> raise (Failure "Take expected longer list")
+    | [] -> []
+    | (x::xs) -> (
+      match n with
+      | 0 -> []
+      | _ -> x :: take (n-1) xs)
+
+  let unzip (pairs : ('a * 'b) list) : 'a list * 'b list =
+    List.fold_right 
+      (fun (x, y) (xs, ys) -> (x::xs, y::ys))
+      pairs ([], [])
+
+end
+
 
 module ExtSyntax = struct
 
