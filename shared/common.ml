@@ -81,7 +81,10 @@ let spec_binding_ty = function
         Some (Scheme ([], (`TyFun ([`TyInt], `TyInt))))
     | "not"           -> 
         Some (Scheme ([], (`TyFun ([`TyBool], `TyBool))))
-    | "head" | "tail" -> 
+    | "head" ->
+        let lst_tpe = `TyList (`TyVar "a") in
+        Some (Scheme (["a"], (`TyFun ([lst_tpe], (`TyVar "a")))))
+    | "tail" -> 
         let lst_tpe = `TyList (`TyVar "a") in
         Some (Scheme (["a"], (`TyFun ([lst_tpe], lst_tpe))))
     | ":" -> 

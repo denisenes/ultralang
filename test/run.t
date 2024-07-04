@@ -89,10 +89,10 @@ If expression
 Cons
   $ ${INTERPRETER} "123 : (321 : []);;"
   [123, 321]
-  Int
+  List(Int)
   $ ${INTERPRETER} "(100 * 10) : ((100 / 10) : []);;"
   [1000, 10]
-  Int
+  List(Int)
 
 Call
   $ ${INTERPRETER} "$(cat call3.ul)"
@@ -118,7 +118,11 @@ List
   [2]
   $ ${INTERPRETER} "$(cat car.ul)"
   [1, 4]
+  ([] -> List(List(Int)))
   ([] -> List(Int))
+  ([] -> List(Int))
+  List(List(Int))
+  List(Int)
   List(Int)
   $ ${INTERPRETER} "$(cat cdr.ul)"
   [[2, 3, 4], [3]]

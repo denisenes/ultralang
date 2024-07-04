@@ -8,7 +8,7 @@ module Context = Map.Make(String)
 (* type variable -> type *)
 module Substs  = Map.Make(String)
 
-let debug = true
+let debug = false
 
 let rec type_to_string = 
   let args_to_string args =
@@ -19,7 +19,7 @@ let rec type_to_string =
   function
   | `TyBool   -> "Bool"
   | `TyInt    -> "Int"
-  | `TyList a -> Printf.sprintf "List(%s)" @@ type_to_string a
+  | `TyList a -> Printf.sprintf "List(%s)" (type_to_string a)
   | `TyFun (args, retpe) -> 
     Printf.sprintf "([%s] -> %s)" (args_to_string args) (type_to_string retpe)
   | `TyVar a  -> a
@@ -42,7 +42,7 @@ let new_ty_var () : ty =
 let rec ( *> ) (subst : ty Substs.t) (tpe : ty) : ty = 
   match tpe with
   | `TyBool | `TyInt -> tpe
-  | `TyList t -> subst *> t
+  | `TyList t -> `TyList (subst *> t)
   | `TyFun (args, body) -> `TyFun (
       List.map (fun arg -> subst *> arg) args,
       subst *> body
@@ -113,7 +113,7 @@ let rec unify (tpe1 : ty) (tpe2 : ty) : ty Substs.t =
 let instantiate (schm : ty_scheme) : ty =
   let Scheme (vars, tpe) = schm in
   let new_tvs = List.map (fun _ -> new_ty_var()) vars    in 
-  let subst = Substs.of_list (List.combine vars new_tvs) in
+  let subst   = Substs.of_list (List.combine vars new_tvs) in
   subst *> tpe
 
 let rec infer_list_lit ctx exps =
@@ -121,10 +121,10 @@ let rec infer_list_lit ctx exps =
   let (tpes, substs) = UList.unzip infered in
   let combined_subst = compose_subs substs in
   let tpes           = List.map (fun t -> combined_subst *> t) tpes in
-  let (combined_subst, _) = List.fold_left 
+  let (combined_subst', _) = List.fold_left 
     (fun (acc, pt) t -> (acc <*> (unify pt t), t)) 
     (combined_subst, new_ty_var()) tpes in
-  (`TyList (combined_subst *> (List.hd tpes)), combined_subst)
+  (`TyList (combined_subst' *> (List.hd tpes)), combined_subst')
 
 and infer_call ctx fname args : ty * ty Substs.t =
   let template = match spec_binding_ty fname with
