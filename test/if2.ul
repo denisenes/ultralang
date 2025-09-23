@@ -1,7 +1,0 @@
-let x = 1000    in
-let y = 1000000 in
-
-if x > y
-  then let a = #True  in a
-  else let b = #False in b
-;;

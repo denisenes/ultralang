@@ -1,6 +1,0 @@
-fn test nothing =
-    let lst1 = [1,2,3,4] in
-    let lst2 = [4,3]     in
-    [tail(lst1), tail(lst2)];;
-
-test(nothing);;
