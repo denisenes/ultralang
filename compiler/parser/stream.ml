@@ -1,0 +1,1 @@
+type stream = StringStream of int * string

@@ -1,7 +1,6 @@
+compiler/_build
+compiler/ultralang.opam
 
-.vscode/settings.json
-**/heapdump
-runtime/ultra
-doc/reading-list.md
 .idea
+.vscode
 .gdb_history
