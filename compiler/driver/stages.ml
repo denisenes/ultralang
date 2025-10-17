@@ -3,7 +3,7 @@ open Shared.Ir
 module Stage = struct
   type t = {
     name:         string;
-    action:       (ir_kind -> ir_kind);
+    action:       (stage_data -> stage_data);
     is_printable: bool
   }
 
@@ -28,8 +28,8 @@ module Stage = struct
 end
 
 
-let stages_executor (data : ir_kind) (stages : Stage.t array): ir_kind =
-  let rec stages_executor' (stages: Stage.t array) (i: int) (data: ir_kind) =
+let stages_executor (data : stage_data) (stages : Stage.t array): stage_data =
+  let rec stages_executor' (stages: Stage.t array) (i: int) (data: stage_data) =
     if i >= Array.length stages then
       data (* End of execution *)
     else
@@ -44,5 +44,5 @@ let stages_executor (data : ir_kind) (stages : Stage.t array): ir_kind =
   stages_executor' stages 0 data
 
 
-let stages_executor_no_input (stages : Stage.t array): ir_kind =
-  stages_executor `Nothing stages
+let stages_executor_no_input (stages : Stage.t array): stage_data =
+  stages_executor Nothing stages
