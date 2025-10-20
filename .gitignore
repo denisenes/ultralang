@@ -1,5 +1,6 @@
 compiler/_build
 compiler/ultralang.opam
+build
 
 .idea
 .vscode

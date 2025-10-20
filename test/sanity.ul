@@ -2,4 +2,4 @@ module Main begin
 
 	fn main() = 42
 
-endmodule
+end

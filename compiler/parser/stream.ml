@@ -21,7 +21,7 @@ let from_chan stream : char option =
 
 
 let read_char stream : char =
-  match Dynarray.pop_last_opt stream.buffer with
+  let res = match Dynarray.pop_last_opt stream.buffer with
   | Some c -> c
   | None ->
     begin match from_chan stream with
@@ -31,6 +31,9 @@ let read_char stream : char =
       c
     | None -> raise End_of_file
     end
+  in
+  logMsg TOKENIZER ("Char: " ^ String.make 1 res);
+  res
 
 
 let unread_char stream c : unit = 
@@ -60,10 +63,11 @@ let read_token stream: string =
   let buf = Buffer.create 8 in
   let rec read_token' (): unit =
     let ch = read_char stream in
-    if Token.is_white ch || Token.is_delim ch then
-      unread_char stream ch
-    else
-      Buffer.add_char buf ch;
+    match ch with
+    | _ when ch |> Token.is_delim -> unread_char stream ch
+    | _ when ch |> Token.is_white -> ()
+    | _ -> 
+      let _ = Buffer.add_char buf ch in
       read_token' ()
   in
   skip_whitespaces stream;
@@ -79,8 +83,7 @@ let unread_token stream (tok : string) : unit =
   else
     logMsg TOKENIZER ("[Stream] token unread" ^ tok);
     let tok' = tok ^ " " in (* because we don't want to join this token with the next *)
-    String.iter (fun c -> unread_char stream c) tok'
-
+    String.fold_right (fun c _ -> unread_char stream c) tok' ()
 
 let peak_token stream =
   let token = read_token stream in

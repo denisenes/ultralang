@@ -30,7 +30,7 @@ let actions: (stage_data -> stage_data) StrMap.t = StrMap.empty
   |> StrMap.add "finish"     (fun _ -> Nothing)
 
 
-let stage ?(printable: bool = false) (name: string) : Stage.t =
+let stage ?(printable: bool = true) (name: string) : Stage.t =
   let action = StrMap.find name actions in
   if printable 
     then Stage.constr name action
@@ -49,7 +49,7 @@ let driver_compile filename =
 let driver_main (args: string array) =
   let mode = args.(1) in
   let result = match mode with
-    | "compile" -> driver_compile args.(2)
+    | "--compile" | "-c" -> driver_compile args.(2)
     | _ -> raise (ExecutionException "Execution mode is not defined")
   in
   match result with

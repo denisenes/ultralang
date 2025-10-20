@@ -1,4 +1,5 @@
 import subprocess as sp
+from log import log
 
 class Dune:
 
@@ -8,14 +9,14 @@ class Dune:
 
     def __init__(self, filepath):
         self.dune_root = filepath
-        print(f"[Dune] dune path: {self.dune_root}")
+        log(f"dune path: {self.dune_root}", what="Dune")
 
     def build(self):
-        print("[Dune] build")
+        log("build", what="Dune")
         p = sp.Popen([Dune.command, "build"], cwd=self.dune_root)
         p.wait()
 
     def clean(self):
-        print("[Dune] clear")
+        log("clear", what="Dune")
         p = sp.Popen([Dune.command, "clean"], cwd=self.dune_root)
         p.wait()

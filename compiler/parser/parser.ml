@@ -1,4 +1,5 @@
 open Shared.Ir
+open Shared.Log
 open Stream
 
 exception SyntaxError of string
@@ -35,8 +36,10 @@ let ident ?(kind: Token.identifier_kind = Lower) (stream: Stream.t): string =
 let consume_keyword (stream: Stream.t) (expected: string): unit =
   let actual = read_token stream in
   if Token.is_keyword actual && actual = expected 
-    then ()
-    else errorl stream @@ Printf.sprintf "Unexpected token. Expected: %s, actual: %s." expected actual
+    then begin
+      logMsg PARSER @@ Format.sprintf "Consumed keyword %s" expected;
+      ()
+    end else errorl stream @@ Printf.sprintf "Unexpected token. Expected: %s, actual: %s." expected actual
 
 
 let consume_char (stream: Stream.t) (expected: char) =
@@ -235,9 +238,10 @@ let parse_def (stream: Stream.t): def_desc =
   choice stream [
     ("fn", fun stream ->
       let name = ident stream in
+      let args = parse_def_args stream in
       consume_keyword stream "=";
       let val_exp = parse_infix_exp stream in
-      {name=name; args=[]; line=line; def_type=None; body_tree=Some val_exp}
+      {name=name; args=args; line=line; def_type=None; body_tree=Some val_exp}
     );
     ("const", fun stream ->
       let name = ident stream in
@@ -249,22 +253,26 @@ let parse_def (stream: Stream.t): def_desc =
 
 
 let parse_module stream: module_desc =
-  try
-    consume_keyword stream "module";
-    let name = ident ~kind:Token.Upper stream in
-    consume_keyword stream "begin";
+  logScoped PARSER "parsing module" (fun () ->
+    try
+      consume_keyword stream "module";
+      let name = ident ~kind:Token.Upper stream in
+      consume_keyword stream "begin";
 
-    let defs = go_until_token stream parse_def "end" in
+      let defs = go_until_token stream parse_def "end" in
 
-    {
-      name=name; 
-      imports=[]; (* TODO parse *)
-      exports=[]; (* TODO parse *)
-      defs=defs
-    }
+      {
+        name=name; 
+        imports=[]; (* TODO parse *)
+        exports=[]; (* TODO parse *)
+        defs=defs
+      }
 
-  with (e: exn)
-    -> raise @@ SyntaxError (Printexc.to_string e)
+    with (e: exn)
+      -> 
+        print_endline (Printexc.to_string e);
+        exit 1
+  )
 
 
 (** Parsing entrypoint *)
