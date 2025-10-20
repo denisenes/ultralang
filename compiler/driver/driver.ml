@@ -12,13 +12,21 @@ let read_from_file (str : stage_data) =
   | _ -> raise (End_of_file)
 
 
+let printer (data: stage_data) =
+  match data with
+  | Module m ->
+    let ch = Out_channel.open_text (m.name ^ ".ast") in
+    let _  = Out_channel.output_string ch @@ show_module_desc m in
+    let _  = Out_channel.close ch in
+    Nothing
+  | _ -> raise (InvalidIRKind "Printer input is invalid")
+
+
 let actions: (stage_data -> stage_data) StrMap.t = StrMap.empty
-  |> StrMap.add "repl_draw"  (fun _ -> print_endline ">> "; Nothing)
-  |> StrMap.add "repeat"     (fun _ -> Nothing) (* Control stage *)
   |> StrMap.add "read_stdin" (fun _ -> Channel (In_channel.stdin))
   |> StrMap.add "read_file"  read_from_file
   |> StrMap.add "parser"     Parser.parse
-  |> StrMap.add "printer"    (fun x -> x) (* TODO implement *)
+  |> StrMap.add "printer"    printer
   |> StrMap.add "finish"     (fun _ -> Nothing)
 
 
@@ -27,17 +35,6 @@ let stage ?(printable: bool = false) (name: string) : Stage.t =
   if printable 
     then Stage.constr name action
     else Stage.constr_hidden name action
-
-
-let driver_repl () = 
-  Stages.stages_executor_no_input
-  [|
-    stage "repl_draw";
-    stage "read_stdin";
-    stage "parser";
-    stage "printer";
-    stage "repeat";
-  |]
 
 
 let driver_compile filename =
@@ -52,7 +49,6 @@ let driver_compile filename =
 let driver_main (args: string array) =
   let mode = args.(1) in
   let result = match mode with
-    | "repl" -> driver_repl ()
     | "compile" -> driver_compile args.(2)
     | _ -> raise (ExecutionException "Execution mode is not defined")
   in

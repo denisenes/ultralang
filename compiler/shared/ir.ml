@@ -47,14 +47,20 @@ module Node = struct
 
   (** Includes subtree *)
   let show (node: t): string =
-    let {kind; args; value; line; _} = node in
-    let header = Format.sprintf "%s val[%s] tpe[%s] ln[%s]"
-      (show_node_kind kind)
-      (show_value value)
-      "N/A" (* TODO *)
-      (string_of_int line)
+    let rec show0 n lvl =
+
+      let {kind; args; value; line; _} = n in
+      let tab = String.make lvl '\t' in
+      let header = Format.sprintf "|-> %s val[%s] type[%s] ln[%s]\n"
+        (show_node_kind kind)
+        (show_value value)
+        "N/A" (* TODO *)
+        (string_of_int line)
+      in
+      let sargs = List.map (fun arg -> show0 arg (lvl + 1)) args in
+      tab ^ header ^ (String.concat "" sargs)
     in
-    (* TODO args *)
+    show0 node 0
 
 end
 
@@ -66,6 +72,20 @@ type def_desc = {
   mutable body_tree: Node.t option;
 }
 
+let show_def_desc (dd: def_desc): string =
+  let header = Format.sprintf "\ndef name[%s] line[%s] type[%s]\n" 
+    dd.name
+    (string_of_int dd.line)
+    "N/A" (* TODO *)
+  in
+  let sargs = Format.sprintf "args[%s]\n" @@ String.concat " " dd.args in
+  let body0 = match dd.body_tree with 
+    | None -> ""
+    | Some node -> Node.show node
+  in
+  let body = Format.sprintf "body[%s]\n" body0 in
+  header ^ sargs ^ body
+
 
 type module_desc = {
   name:    string;
@@ -73,6 +93,11 @@ type module_desc = {
   exports: string list;
   defs:    def_desc list;
 }
+
+let show_module_desc (md: module_desc): string =
+  Format.sprintf "module name[%s]\ndefs[%s]" 
+    md.name
+    (String.concat "" @@ List.map show_def_desc md.defs)
 
 
 type stage_data =
