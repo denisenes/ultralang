@@ -45,29 +45,29 @@ module_name
 
 // {{ region Types
 
-type_exp
+type_exp // TODO
     : type_var
     | type_app
     ;
 
-type_var
+type_var // TODO
     : LOWER_IDENTIFIER
     ;
 
-type_app
+type_app // TODO
     : UPPER_IDENTIFIER (LBRACKET type_exp (COMMA type_exp)* RBRACKET)?
     ;
 
-def_type
+def_type // TODO
     : TYPE type_constructor EQ
         (COND_DELIM data_constructor)+
     ;
 
-type_constructor
+type_constructor // TODO
     : UPPER_IDENTIFIER (LBRACKET type_var (COMMA type_var)* RBRACKET)?
     ;
 
-data_constructor
+data_constructor // TODO
     : identifier (LPAREN identifier TYPE_DEL type_exp (COMMA identifier TYPE_DEL type_exp)* RPAREN)?
     ;
 
@@ -75,7 +75,6 @@ data_constructor
 
 // region Expresions
 
-// TODO sequential let
 // TODO environment bindings
 
 infix_exp
@@ -83,7 +82,7 @@ infix_exp
     ;
 
 exp
-    : seq_exp
+    : seq_exp // TODO
     | if_exp
     | LPAREN infix_exp RPAREN
     | cond_exp
@@ -96,13 +95,13 @@ exp
     ;
 
 literal
-    : LIT_STR
+    : LIT_STR // TODO
     | LIT_INT
     | LIT_NIL
     | LIT_UNIT
     ;
 
-seq_exp
+seq_exp // TODO
     : SEQ (infix_exp ';')+ END
     ;
 

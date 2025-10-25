@@ -48,10 +48,11 @@ def test(ctx: BContext):
 
     test_dir = ctx.test_dir
     with chdir(test_dir):
-        tests = glob.glob(f"{test_dir}/*")
+        tests = glob.glob(f"{test_dir}/*.ul")
         for t in tests:
             log(f"executing test {t}", what="Test")
-            p = sp.Popen([Dune.comp_exe_name, "-c", t])
+            ultrac = os.path.join(ctx.bin_dir, "ultrac")
+            p = sp.Popen([ultrac, "-c", t])
             try:
                 p.wait(timeout=3)
             except sp.TimeoutExpired:

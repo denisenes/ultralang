@@ -3,14 +3,18 @@ open Shared.Log
 let _debug = false
 
 type t = {
-  mutable line_num : int; 
-  mutable buffer   : char Dynarray.t; 
-  source           : in_channel; 
+  mutable line_num    : int; 
+  mutable module_name : string option;
+  mutable def_name    : string option;
+  mutable buffer      : char Dynarray.t; 
+  source              : in_channel; 
 }
 
 
 let create source = {
   line_num = 1;
+  module_name = None;
+  def_name = None;
   buffer = Dynarray.create ();
   source = source
 }
@@ -18,6 +22,26 @@ let create source = {
 
 let from_chan stream : char option = 
   In_channel.input_char stream.source
+
+
+let with_module (s: t) (mname: string option) (action: unit -> 'a) = 
+  s.module_name <- mname;
+  let res = action() in
+  s.module_name <- None;
+  res
+
+
+let with_def (s: t) (dname: string option) (action: unit -> 'a) = 
+  s.def_name <- dname;
+  let res = action() in
+  s.def_name <- None;
+  res
+
+
+let current_pos (s: t): string =
+  let mname = Option.value s.module_name ~default:"<Unknown>" in
+  let dname = Option.value s.def_name ~default:"<unknown>" in
+  Format.sprintf "[%s:%s:%d]" mname dname s.line_num
 
 
 let read_char stream : char =

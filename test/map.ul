@@ -1,0 +1,37 @@
+module TestMap begin
+
+    decl sqr(x):            Fn[Int, Int, Int]
+    decl map(f, xs):        Fn[Fn[$A, $B], List[$A], List[$B]]
+    decl sum_list(xs, acc): Fn[List[Int], Int]
+
+    fn sqr(x) = x * x
+
+    fn map(f, xs) = cond
+        | is_nil(xs) => xs
+        | #True      =>
+            let hd = head(xs) in
+            let tl = tail(xs) in
+            f(hd) : map(f, tl)
+        endcond
+
+    fn sum_list(xs, acc) = cond
+        | is_nil(xs) => acc
+        | #True      => sum_list(tail(xs), acc + head(xs))
+        endcond
+
+    fn test_map_ident(): Fn[Unit] =
+        let lst1 = [1, 2, 3, 4, 5] in
+        let lst2 = map(sqr, lst1)  in
+        sum_list(lst2, 0)
+
+    fn test_map_lam(): Fn[Unit] =
+        let lst1 = [1, 2, 3, 4, 5] in
+        let lst2 = map(fn(x) = (x * x) / 2, lst1) in
+        sum_list(tail(xs), acc + head(xs))
+
+    fn main(): Fn[Unit] =
+        let res1 = test_map_ident() in
+        let res2 = test_map_lam() in
+        res1 + res2
+
+end

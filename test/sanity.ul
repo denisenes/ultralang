@@ -1,5 +1,13 @@
-module Main begin
+module TestSanity begin
+
+	const tmp = 123
 
 	fn main() = 42
+
+	fn plus(a, b) = a + b
+
+	fn conditional() = if plus(123, 321) == 444 then 1 else 0
+
+	fn arith(a, b, c, d) = ((a + b) / (c - d)) / tmp
 
 end
