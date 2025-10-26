@@ -1,0 +1,18 @@
+module name[TestAdt]
+defs[
+
+Ir.FuncDef name[main] line[35] type[Fn[Unit]]
+args[]
+body[
+│	├─Literal val[Ir.Node.Unit] type[] ln[35]
+]
+
+]
+
+ADTs:
+ArithmExpr
+List
+Option
+Point
+Result
+Tree
