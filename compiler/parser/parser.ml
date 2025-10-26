@@ -280,8 +280,14 @@ let parse_def (stream: Stream.t): def_desc =
       Stream.with_def stream (Some name) (fun () ->
         consume_keyword stream "=";
         let body = parse_infix_exp stream in
-        {dtype=Const; name=name; args=[]; line=line; def_type=None; body_tree=Some body}
+        {kind=Const; name=name; args=[]; line=line; def_type=None; body_tree=Some body}
       )
+    );
+    ("type", fun stream ->      
+      let (name, params) = parse_type_constr stream in
+      consume_keyword stream "";
+      let variants = parse_data_constrs stream in
+      
     );
     ("fn", fun stream ->
       let name = ident stream in
@@ -293,15 +299,15 @@ let parse_def (stream: Stream.t): def_desc =
         in
         consume_keyword stream "=";
         let val_exp = parse_infix_exp stream in
-        {dtype=FuncDef; name=name; args=args; line=line; def_type=tpe; body_tree=Some val_exp}
+        {kind=FuncDef; name=name; args=args; line=line; def_type=tpe; body_tree=Some val_exp}
       )
     );
-    ("decl", fun stream -> (* as FuncDecl but without body *)
+    ("decl", fun stream -> (* as FuncDef but without body *)
       let name = ident stream in
       let args = parse_def_args stream in
       consume_char stream ':';
       let tpe = parse_type_expr stream in
-      {dtype=FuncDecl; name=name; args=args; line=line; def_type=(Some tpe); body_tree=None}
+      {kind=FuncDecl; name=name; args=args; line=line; def_type=(Some tpe); body_tree=None}
     );
   ]
 

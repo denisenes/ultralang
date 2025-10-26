@@ -4,7 +4,6 @@ type log_type =
   | EXECUTION
 
 let active = [
-  TOKENIZER;
   PARSER;
   EXECUTION;
 ]

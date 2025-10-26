@@ -45,16 +45,16 @@ module_name
 
 // {{ region Types
 
-type_exp // TODO
+type_exp
     : type_var
     | type_app
     ;
 
-type_var // TODO
+type_var
     : LOWER_IDENTIFIER
     ;
 
-type_app // TODO
+type_app
     : UPPER_IDENTIFIER (LBRACKET type_exp (COMMA type_exp)* RBRACKET)?
     ;
 

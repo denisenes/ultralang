@@ -1,5 +1,10 @@
 module TestMap begin
 
+    type List[$A] =
+        | nil
+        | cons(v: $A, tail: List[$A])
+    end
+
     decl sqr(x):            Fn[Int, Int, Int]
     decl map(f, xs):        Fn[Fn[$A, $B], List[$A], List[$B]]
     decl sum_list(xs, acc): Fn[List[Int], Int]

@@ -1,10 +1,3 @@
-type utype = 
-  | Var  of string               (* e.g. $A, $B *)
-  | Atom of string               (* e.g. Int, Bool *)
-  | App  of string * utype list  (* e.g. List[Int], Fn[$A, $B] *)
-  [@@deriving show]
-
-
 module Node = struct
 
   type value =
@@ -44,7 +37,7 @@ module Node = struct
     args:          t list;
     value:         value;
     line:          int;
-    mutable ntype: utype option;
+    mutable ntype: Type.t option;
   }
 
   let node kind ?(name = None) ?(args = []) ?(value = NoValue) ?(line = 0) ?(ntype = None) (): t =
@@ -72,7 +65,7 @@ module Node = struct
         (show_node_kind kind)
         (if Option.is_some name then Format.sprintf "name[%s] " (Option.get name) else "")
         (if value <> NoValue then show_value value else "")
-        (if Option.is_some ntype then Option.get ntype |> show_utype else "")
+        (if Option.is_some ntype then Option.get ntype |> Type.show else "")
         (string_of_int line)
       in
       let sargs = List.map (fun arg -> show0 arg (lvl + 1)) args in
@@ -82,25 +75,28 @@ module Node = struct
 
 end
 
-type def_type =
+type def_kind =
   | Const
+  | TypeDef
   | FuncDef
   | FuncDecl
+  [@@deriving show]
 
 type def_desc = {
-  dtype:             def_type;
+  kind:              def_kind;
   name:              string;
   args:              string list;
   line:              int;
-  mutable def_type:  utype option;
+  mutable def_type:  Type.t option;
   mutable body_tree: Node.t option;
 }
 
 let show_def_desc (dd: def_desc): string =
-  let header = Format.sprintf "\n\ndef name[%s] line[%s] type[%s]\n" 
+  let header = Format.sprintf "\n\n%s name[%s] line[%s] type[%s]\n" 
+    (show_def_kind dd.kind)
     dd.name
     (string_of_int dd.line)
-    "N/A" (* TODO *)
+    (if Option.is_some dd.def_type then Option.get dd.def_type |> Type.show else "")
   in
   let sargs = Format.sprintf "args[%s]\n" @@ String.concat " " dd.args in
   let body0 = match dd.body_tree with 
