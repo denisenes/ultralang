@@ -1,0 +1,37 @@
+module TestAdt begin
+
+    type Point =
+    | point(x: Int, y: Int)
+    end
+
+    type Option[$A] =
+    | none
+    | some(v: $A)
+    end
+
+    type Result[$E, $A] =
+    | error(e: $E)
+    | ok(res: $A)
+    end
+
+    type List[$A] =
+    | nil
+    | cons(v: $A, tail: List[$A])
+    end
+
+    type Tree[$A] =
+    | leaf(leaf: $A)
+    | node(left: Tree[$A], right: Tree[$A])
+    end
+
+    type ArithmExpr =
+    | value(v: Int)
+    | add(e1: ArithmExpr, e2: ArithmExpr)
+    | sub(e1: ArithmExpr, e2: ArithmExpr)
+    | mul(e1: ArithmExpr, e2: ArithmExpr)
+    | div(e1: ArithmExpr, e2: ArithmExpr)
+    end
+
+    fn main(): Fn[Unit] = ()
+
+end

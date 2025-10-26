@@ -1,7 +1,7 @@
 let newline ='\n'
 let whitespaces =  [newline; ' '; '\t'; '\r']
-let infix_op_char = ['*'; '+'; '-'; '/'; '>'; '<'; '='; '|'; '&'; ':']
-let delimiters = ['('; ')'; '{'; '}'; '['; ']'; ';'; '\"'; ',']
+let infix_op_char = ['*'; '+'; '-'; '/'; '>'; '<'; '='; '|'; '&']
+let delimiters = ['('; ')'; '{'; '}'; '['; ']'; ';'; '\"'; ','; ':']
 let keywords = [
   "module"; "begin"; "end";
   "if"; "then"; "else"; 

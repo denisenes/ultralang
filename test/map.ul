@@ -1,13 +1,8 @@
 module TestMap begin
 
-    type List[$A] =
-        | nil
-        | cons(v: $A, tail: List[$A])
-    end
-
-    decl sqr(x):            Fn[Int, Int, Int]
+    decl sqr(x):            Fn[Int, Int]
     decl map(f, xs):        Fn[Fn[$A, $B], List[$A], List[$B]]
-    decl sum_list(xs, acc): Fn[List[Int], Int]
+    decl sum_list(xs, acc): Fn[List[Int], Int, Int]
 
     fn sqr(x) = x * x
 
@@ -16,7 +11,7 @@ module TestMap begin
         | #True      =>
             let hd = head(xs) in
             let tl = tail(xs) in
-            f(hd) : map(f, tl)
+            f(hd) <- map(f, tl)
         endcond
 
     fn sum_list(xs, acc) = cond

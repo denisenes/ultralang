@@ -17,8 +17,10 @@ let printer (data: stage_data) =
   | Module m ->
     let ch = Out_channel.open_text (m.name ^ ".ast") in
     let _  = Out_channel.output_string ch @@ show_module_desc m in
-    let _  = Out_channel.close ch in
-    Nothing
+    let _  = Out_channel.output_string ch @@ Shared.Type.AdtRegistry.show() in
+    let _  = 
+      Out_channel.close ch in
+      Nothing
   | _ -> raise (InvalidIRKind "Printer input is invalid")
 
 

@@ -1,11 +1,14 @@
+open Shared
 open Shared.Ir
 open Shared.Log
 open Stream
 
 exception SyntaxError of string
 
+
 let error (msg: string) = 
   raise @@ SyntaxError msg
+
 
 let errorl (stream: Stream.t) (msg: string) = 
   let prefix = Stream.current_pos stream in
@@ -30,7 +33,7 @@ let ident ?(kind: Token.identifier_kind = Lower) (stream: Stream.t): string =
   let ident = read_token stream in
   if is_valid_ident ~kind ident
     then ident
-    else error @@ Printf.sprintf "Incorrect identifier: '%s'" ident
+    else errorl stream @@ Printf.sprintf "Incorrect identifier: '%s'" ident
 
 
 let consume_keyword (stream: Stream.t) (expected: string): unit =
@@ -47,7 +50,7 @@ let consume_char (stream: Stream.t) (expected: char) =
   let c = read_char stream in
   if c = expected
     then ()
-    else errorl stream @@ Printf.sprintf "Unexpected character: '%c'" c
+    else errorl stream @@ Printf.sprintf "Unexpected character. Expected: '%c', actual: '%c'" expected c
 
 
 let go_until (stream: Stream.t) (action: (Stream.t -> 'a)) (pred: unit -> bool): 'a list =
@@ -94,26 +97,77 @@ let if_next_char (stream: Stream.t) (expected: char) (action: Stream.t -> 'a) (o
     otherwise stream
 
 
-let rec parse_type_app stream : utype list =
+let rec parse_type_app stream : Type.t list =
   let fst = parse_type_expr stream in
   let tail = go_until_char stream (fun s -> consume_char s ','; parse_type_expr s) ']' in
   fst :: tail
 
 
-and parse_type_expr (stream: Stream.t): utype =
+and parse_type_expr (stream: Stream.t): Type.t =
   skip_whitespaces stream;
 
-  if_next_char stream '$' (fun _ -> 
-    Var (ident ~kind:Upper stream)
+  if_next_char stream '$' (fun _ ->
+    Type.Var (ident ~kind:Upper stream)
   ) ( fun _ ->
     let tname = ident ~kind:Upper stream in
     if_next_char stream '[' (fun _ -> 
       let args = parse_type_app stream in
-      App (tname, args)
+      Type.App (tname, args)
     ) (fun _ -> 
-      Atom tname
+      Type.Atom tname
     )
   )
+
+
+let parse_type_constr stream: string * Type.t =
+  let name = ident ~kind:Upper stream in
+  if_next_char stream '['
+  (fun _ ->
+      let fst = parse_type_expr stream in
+      let tail = go_until_char stream 
+        (fun s -> consume_char s ','; parse_type_expr s) ']' 
+      in
+      let params = fst::tail in
+    let is_var = List.for_all (fun p -> 
+        match p with 
+        | Type.Var _ -> true 
+        | _ -> false
+      ) params 
+    in
+    if not is_var 
+      then errorl stream "Type parameters can be only variables"
+      else (name, Type.App (name, params)) 
+  ) 
+  (fun _ ->
+    name, Type.Atom name  
+  )
+
+
+let parse_data_constrs stream: Type.variant list =
+  let open Type in
+  go_until_token stream (fun _ ->
+    consume_char stream '|';
+    let vname = ident stream in
+    if_next_char stream '(' 
+    (fun _ ->
+      let fst_name = ident stream in
+      let fst_tpe = consume_char stream ':'; parse_type_expr stream in
+      let tail = go_until_char stream (fun _ ->
+        consume_char stream ',';
+        let aname = ident stream in
+        consume_char stream ':';
+        let texp = parse_type_expr stream in 
+        (aname, texp)
+      ) ')'
+      in
+      let args = (fst_name, fst_tpe) :: tail in
+      let (anames, texps) = List.split args in
+      {vname=vname; vargs=anames; vtemplate=Type.App (vname, texps)}
+    )
+    (fun _ ->
+      {vname=vname; vargs=[]; vtemplate=Type.Atom vname}
+    )
+  ) "end"
 
 
 let parse_def_args stream: string list =
@@ -167,9 +221,13 @@ and parse_exp (stream: Stream.t) : Node.t =
   let ch = read_char stream in
 
   if ch = '(' then
-    let iexp = parse_infix_exp stream in
-    consume_char stream ')';
-    iexp
+    if_next_char stream ')' 
+      (fun _ -> literal Unit ~line:line ())
+      (fun _ -> 
+        let iexp = parse_infix_exp stream in
+        consume_char stream ')';
+        iexp
+      )
   else
 
   if ch = '#' then (* TODO remove and represent as ADT *)
@@ -271,7 +329,7 @@ and parse_infix_exp (stream: Stream.t): Node.t =
   end
 
 
-let parse_def (stream: Stream.t): def_desc =
+let parse_def (stream: Stream.t): def_desc option =
   skip_whitespaces stream;
   let line = stream.line_num in
   choice stream [
@@ -280,14 +338,23 @@ let parse_def (stream: Stream.t): def_desc =
       Stream.with_def stream (Some name) (fun () ->
         consume_keyword stream "=";
         let body = parse_infix_exp stream in
-        {kind=Const; name=name; args=[]; line=line; def_type=None; body_tree=Some body}
+        Some { kind=Const; 
+               name=name; 
+               args=[]; 
+               line=line; 
+               def_type=None; 
+               body_tree=Some body }
       )
     );
-    ("type", fun stream ->      
-      let (name, params) = parse_type_constr stream in
-      consume_keyword stream "";
-      let variants = parse_data_constrs stream in
-      
+    ("type", fun stream ->
+      let open Type in  
+      let (name, tpe) = parse_type_constr stream in
+      Stream.with_def stream (Some name) (fun () ->
+        consume_keyword stream "=";
+        let variants = parse_data_constrs stream in
+        AdtRegistry.add {name=name; template=tpe; variants=variants};
+        None
+      )
     );
     ("fn", fun stream ->
       let name = ident stream in
@@ -299,7 +366,12 @@ let parse_def (stream: Stream.t): def_desc =
         in
         consume_keyword stream "=";
         let val_exp = parse_infix_exp stream in
-        {kind=FuncDef; name=name; args=args; line=line; def_type=tpe; body_tree=Some val_exp}
+        Some { kind=FuncDef; 
+               name=name; 
+               args=args; 
+               line=line; 
+               def_type=tpe; 
+               body_tree=Some val_exp }
       )
     );
     ("decl", fun stream -> (* as FuncDef but without body *)
@@ -307,7 +379,12 @@ let parse_def (stream: Stream.t): def_desc =
       let args = parse_def_args stream in
       consume_char stream ':';
       let tpe = parse_type_expr stream in
-      {kind=FuncDecl; name=name; args=args; line=line; def_type=(Some tpe); body_tree=None}
+      Some { kind=FuncDecl;
+             name=name; 
+             args=args; 
+             line=line; 
+             def_type=(Some tpe); 
+             body_tree=None }
     );
   ]
 
@@ -320,7 +397,8 @@ let parse_module stream: module_desc =
       Stream.with_module stream (Some name) (fun () -> 
         consume_keyword stream "begin";
 
-        let defs = go_until_token stream parse_def "end" in
+        let defs0 = go_until_token stream parse_def "end" in
+        let defs = List.filter_map Fun.id defs0 in
 
         {
           name=name; 
