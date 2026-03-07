@@ -1,4 +1,4 @@
 (library
  (name parser)
- (modules parser stream token)
+ (modules parser parserasm stream token)
  (libraries shared))

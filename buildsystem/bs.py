@@ -2,6 +2,7 @@ import os
 from log import log, logStage
 from os.path import join
 from dune import Dune
+from gcc import GCC
 from file import *
 from contextlib import chdir
 import subprocess as sp
@@ -12,7 +13,8 @@ class BContext:
         self.run_dir    : str = run_dir
         self.build_dir  : str = run_dir + "/build"
         self.bin_dir    : str = self.build_dir + "/bin"
-        self.ultrac_dir : str = run_dir + "/compiler"
+        self.ultrac_dir : str = run_dir + "/ultrac"
+        self.emu_dir    : str = run_dir + "/ucorn/emulator"
         self.test_dir   : str = run_dir + "/test"
 
     def __str__(self):
@@ -29,6 +31,13 @@ def init_build_dir(ctx: BContext):
     os.mkdir(ctx.bin_dir)
 
 
+def contribute_bin(source_dir: str, bin: str):
+    source = join(source_dir, bin)
+    target = join(ctx.bin_dir, bin) 
+    copy(source, target)
+    chmod(target, 766)
+
+
 def build_ultrac(ctx: BContext):
     logStage("Build compiler")    
 
@@ -37,10 +46,20 @@ def build_ultrac(ctx: BContext):
     d.clean()
     d.build()
 
-    source = join(d.dune_root, Dune.comp_exe_path, Dune.comp_exe_name)
-    target = join(ctx.bin_dir, Dune.comp_exe_name) 
-    copy(source, target)
-    chmod(target, 766)
+    contribute_bin(join(d.dune_root, Dune.comp_exe_path) , Dune.comp_exe_name)
+
+
+def build_emu(ctx: BContext):
+    logStage("Build emulator")
+
+    bin_name = "ucorn-emu"
+
+    gcc = GCC()
+    gcc.set_arg("-v")
+    gcc.build_dir(ctx.emu_dir, bin_name, False)
+
+    contribute_bin(ctx.emu_dir, bin_name)
+    rm(join(ctx.emu_dir, bin_name))
 
 
 def test(ctx: BContext):
@@ -59,10 +78,12 @@ def test(ctx: BContext):
                 p.kill()
                 log(f"Test {t} is killed by timeout", what="Error")
 
+
 if __name__ == '__main__':
     ctx = BContext(os.getcwd())
     log(ctx)
 
     init_build_dir(ctx)
     build_ultrac(ctx)
+    build_emu(ctx)
     test(ctx)

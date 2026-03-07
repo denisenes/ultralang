@@ -22,14 +22,14 @@ module Node = struct
     | Literal
   
   let show_node_kind = function
-  | ListLiteral -> "Literal.List"
-  | Ident       -> "Identifier"
-  | Let         -> "Exp.Let"
-  | If          -> "Exp.If"
-  | Cond        -> "Exp.Cond"
-  | Call        -> "Exp.Call"
-  | Lambda      -> "Exp.Lambda"
-  | Literal     -> "Literal"
+    | ListLiteral -> "Literal.List"
+    | Ident       -> "Identifier"
+    | Let         -> "Exp.Let"
+    | If          -> "Exp.If"
+    | Cond        -> "Exp.Cond"
+    | Call        -> "Exp.Call"
+    | Lambda      -> "Exp.Lambda"
+    | Literal     -> "Literal"
 
   type t = {
     kind:          node_kind;

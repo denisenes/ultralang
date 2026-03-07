@@ -19,6 +19,12 @@ def rmdir_ex(path):
         shutil.rmtree(path)
 
 
+def rm(path):
+    log(f"remove file \n\tpath: {path}", what="File")
+    if os.path.exists(path):
+        os.remove(path)
+
+
 def chmod(path, mode):
     log(f"chmod {mode} \n\tpath: {path}", what="File")
     os.chmod(path, mode)

@@ -1,4 +1,0 @@
-(library
- (name shared)
- (preprocess (pps ppx_deriving.show))
- (modules ir type log utils))
