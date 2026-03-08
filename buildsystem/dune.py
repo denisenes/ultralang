@@ -15,7 +15,7 @@ class Dune:
 
     def build(self):
         log("build", what="Dune")
-        p = sp.Popen([Dune.command, "build"], cwd=self.dune_root)
+        p = sp.Popen([Dune.command, "build", "--verbose"], cwd=self.dune_root)
         p.wait()
 
 

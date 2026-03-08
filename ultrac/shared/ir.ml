@@ -1,3 +1,5 @@
+open Isa
+
 module Node = struct
 
   type value =
@@ -122,9 +124,13 @@ let show_module_desc (md: module_desc): string =
 
 type stage_data =
   | Nothing
-  | Module  of module_desc  
+  | Module  of module_desc
+  | LLIR    of Block.t list
   | String  of string
   | Channel of in_channel
 
 
 exception InvalidIRKind of string
+
+let invalid_ir_kind (expected_in: string) (expected_out: string) =
+  raise @@ InvalidIRKind (Format.sprintf "Expected: %s -> %s" expected_in expected_out)

@@ -1,6 +1,9 @@
 let word_size  = 2 (* bytes *)
 let hword_size = 1 (* byte *)
 
+exception InternalError of string
+
+let shouldNotReachHere (msg: string): 'a = InternalError msg |> raise
 
 let rec string_rep (s: string) (i: int): string =
   match i with

@@ -27,7 +27,8 @@ let printer (data: stage_data) =
 let actions: (stage_data -> stage_data) StrMap.t = StrMap.empty
   |> StrMap.add "read_stdin" (fun _ -> Channel (In_channel.stdin))
   |> StrMap.add "read_file"  read_from_file
-  |> StrMap.add "parser"     Parser.parse
+  |> StrMap.add "parser"     Frontend.Parser.parse
+  |> StrMap.add "parser-asm" Frontend.Parserasm.parse
   |> StrMap.add "printer"    printer
   |> StrMap.add "finish"     (fun _ -> Nothing)
 

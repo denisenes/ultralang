@@ -3,10 +3,6 @@ open Shared.Ir
 open Shared.Log
 open Shared.Isa
 
-type width =
-  | W8
-  | W16
-
 let sym_marker = '$'
 
 let directives = [
@@ -22,30 +18,9 @@ let as_range (v: string): int =
   match int_of_string_opt v with
   | Some num -> num
   | None -> match v with
-    | "word" -> Utils.word_size
-    | "hword" -> Utils.hword_size
+    | "word"  -> word_size
+    | "hword" -> hword_size
     | s -> Printf.sprintf "Unknown range: '%s'" s |> Parser.error
-
-
-let as_operand (w: width) (s: string): Instruction.operand =
-  match int_of_string_opt s with
-  | Some num -> begin match w with
-    | W8  -> W8 num
-    | W16 -> W16 num
-    end
-  | None -> 
-    begin if String.starts_with ~prefix:s "$" then
-      Label (Utils.string_tail s 1)
-    else
-      (* Special values*)
-      match s with
-      | "eq" -> W8 0
-      | "gt" -> W8 1
-      | "lt" -> W8 (-1)
-      | _ -> Printf.sprintf "Unknown operand: '%s'" s 
-          |> Parser.error
-    end
-      
 
 
 let read_symbol (stream: Stream.t): string =
@@ -62,11 +37,46 @@ let consume_directive (stream: Stream.t) (expected: string): unit =
 
 
 let parse_seq_elem stream: Block.elem =
-  match Stream.peek_char stream with
-  | sym_marker -> Meta (Label (read_symbol stream))
-  | s -> 
-    begin
+  let as_operand (w: Instruction.width) (s: string): Instruction.operand =
+  match int_of_string_opt s with
+  | Some num -> begin match w with
+    | W8  -> W8  num
+    | W16 -> W16 num
+    end
+  | None -> 
+    begin if String.starts_with ~prefix:s "$" then
+      Label (Utils.string_tail s 1)
+    else
+      (* Special values*)
+      match s with
+      | "eq" -> W8 0
+      | "gt" -> W8 1
+      | "lt" -> W8 (-1)
+      | _ -> Printf.sprintf "Unknown operand: '%s'" s 
+          |> Parser.error
+    end
+  in
 
+  let read_opnd (opcode: Instruction.opcode) (n: int): Instruction.operand =
+    as_operand (Instruction.width opcode n) (Stream.read_token stream)
+  in
+
+  match Stream.peek_char stream with
+  | c when c = sym_marker -> 
+    let res = Meta.Label (read_symbol stream) |> Block.meta in
+    Parser.consume_char stream ':';
+    res
+  | _ -> 
+    begin
+      let opcode = Stream.read_token stream |> Instruction.from_string in
+      let instr = match Instruction.arity opcode with
+      | 0 -> Instruction.constr0 opcode
+      | 1 -> Instruction.constr1 opcode (read_opnd opcode 0) 
+      | 2 -> Instruction.constr2 opcode (read_opnd opcode 0) (read_opnd opcode 1)
+      | 3 -> Instruction.constr3 opcode (read_opnd opcode 0) (read_opnd opcode 1) (read_opnd opcode 2)
+      | n -> Format.sprintf "Impossible number of operands: %d" n
+          |> Shared.Utils.shouldNotReachHere
+      in Block.instr instr
     end
 
 
@@ -95,7 +105,7 @@ let parse_block stream: Block.t =
   | ".res" -> 
     begin
       let sym  = read_symbol stream in
-      let size = read_token stream |> as_range in
+      let size = Stream.read_token stream |> as_range in
       {
         kind       = Reserved;
         start_addr = None;
@@ -113,7 +123,6 @@ let parse_blocks stream: Block.t list =
   Parser.go_until_token stream (fun _ ->
     parse_block stream
   ) ".endasm"
-  
 
 
 (** Parsing entrypoint *)
@@ -121,5 +130,5 @@ let parse (input: stage_data): stage_data =
   match input with
   | Channel chan ->
     let stream = Stream.create chan in
-    Module (parse_module stream)
-  | _ -> raise (InvalidIRKind "Parser expects channel as input")
+    LLIR (parse_blocks stream)
+  | _ -> Shared.Ir.invalid_ir_kind "Channel" "LLIR"
