@@ -1,0 +1,23 @@
+{
+	"name": "Ultralang Dev",
+	"build": {
+		"dockerfile": "../Dockerfile",
+		"context": ".."
+	},
+
+	// "features": {},
+
+	// "postCreateCommand": "uname -a",
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-vscode.cpptools",
+				"ocamllabs.ocaml-platform"
+			]
+		}
+	},
+
+	"remoteUser": "root"
+}
