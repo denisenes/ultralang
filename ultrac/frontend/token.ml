@@ -3,7 +3,7 @@ let whitespaces =  [newline; ' '; '\t'; '\r']
 let infix_op_char = ['*'; '+'; '-'; '/'; '>'; '<'; '='; '|'; '&']
 let delimiters = ['('; ')'; '{'; '}'; '['; ']'; ';'; '\"'; ','; ':']
 let keywords = [
-  ".asm"; ".endasm";
+  ".asm"; ".endasm"; (* TODO separate keyword sets for different frontends *)
   "module"; "begin"; "end";
   "if"; "then"; "else"; 
   "cond"; "endcond"; "=>"; "="; "|"; 

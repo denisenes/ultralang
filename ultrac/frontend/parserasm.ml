@@ -10,7 +10,9 @@ let directives = [
   ".res"; ".function";
 ]
 
-let is_directive (s: string) = List.mem s directives
+
+let is_directive (s: string) = 
+  List.mem s directives
 
 
 let as_range (v: string): int =
