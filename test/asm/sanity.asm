@@ -1,12 +1,12 @@
-.asm
+.asm SanityTest
 
-.function $entrypoint
+.function $entrypoint:
     val.w 123
     val.w $a
-    st
+    st WORD
     val.w 312
     val.w $b
-    st
+    st WORD
     br $compute
 
 .res $a      word
@@ -15,20 +15,20 @@
 
 .function $compute:
     val.w $a
-    ld
+    ld WORD
     val.w $b
-    ld
+    ld WORD 
     sub
     cmp.zs
-    br.if eq 
+    br.if eq $eq
 $neq:
     val.w 127
     br $end
 $eq:
     val.w 63
-$end:
+$epilogue:
     val.w $result
-    st
+    st WORD
     hlt
     
 .endasm

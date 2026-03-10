@@ -1,5 +1,6 @@
 open Stages
 open Shared.Ir
+open Shared.Isa
 
 exception ExecutionException of string
 
@@ -19,6 +20,12 @@ let printer (data: stage_data) =
     let _  = Out_channel.output_string ch @@ show_module_desc m in
     let _  = Out_channel.output_string ch @@ Shared.Type.AdtRegistry.show() in
     let _  = 
+      Out_channel.close ch in
+      Nothing
+  | LLIR llir ->
+    let ch = Out_channel.open_text (llir.name ^ ".llir") in
+    let _ = Out_channel.output_string ch @@ CUnit.show_unit llir in
+    let _ =
       Out_channel.close ch in
       Nothing
   | _ -> raise (InvalidIRKind "Printer input is invalid")
@@ -49,10 +56,20 @@ let driver_compile filename =
   |]
 
 
+let driver_asm filename =
+  Stages.stages_executor (String filename)
+  [|
+    stage "read_file";
+    stage "parser-asm";
+    stage "printer";
+  |]
+
+
 let driver_main (args: string array) =
   let mode = args.(1) in
   let result = match mode with
     | "--compile" | "-c" -> driver_compile args.(2)
+    | "--asm" -> driver_asm args.(2)
     | _ -> raise (ExecutionException "Execution mode is not defined")
   in
   match result with

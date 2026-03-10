@@ -62,7 +62,7 @@ module Node = struct
     let rec show0 n lvl =
 
       let {kind; name; args; value; line; ntype} = n in
-      let tab = Utils.string_rep "│\t" lvl in
+      let tab = Utils.UString.string_rep "│\t" lvl in
       let header = Format.sprintf "├─%s %sval[%s] type[%s] ln[%s]\n"
         (show_node_kind kind)
         (if Option.is_some name then Format.sprintf "name[%s] " (Option.get name) else "")
@@ -125,7 +125,7 @@ let show_module_desc (md: module_desc): string =
 type stage_data =
   | Nothing
   | Module  of module_desc
-  | LLIR    of Block.t list
+  | LLIR    of CUnit.t
   | String  of string
   | Channel of in_channel
 

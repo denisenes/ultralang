@@ -1,3 +1,5 @@
+open Utils
+
 module Instruction = struct
 
   type width =
@@ -41,7 +43,7 @@ module Instruction = struct
     | LOAD_DYN_OFFS   (* ld.d    1:8 *)
     | LOAD_LOC        (* ld.l    1:16 *)
     | STORE           (* st      1:8 *)
-    | STORE_OFFS      (* st      2:6,16 *)
+    | STORE_OFFS      (* st      2:8,16 *)
     | STORE_DYN_OFFS  (* st.d    1:8 *)
     | STORE_LOC       (* st.l    1:16 *)
     | BR              (* br      1:16 *)
@@ -55,7 +57,7 @@ module Instruction = struct
     | LFREE           (* lfree   1:16 *)
     | INT             (* int     1:8 *)
     | INT_SET_HANDLER (* int.h   2:8,16 *)
-  [@@deriving enum]
+  [@@deriving enum, show { with_path = false }]
 
   let arity: opcode -> int = function
     | HALT | CONST_ZERO | DUP | SWAP | DROP | BIN_ADD | BIN_SUB | BIN_MUL | BIN_DIV | BIN_REM 
@@ -146,11 +148,13 @@ module Instruction = struct
     | Label of string 
     | W8    of int 
     | W16   of int
+  [@@deriving show { with_path = false }]
   
   type t = {
     uop:   opcode;
     opnds: operand list;
   }
+  [@@deriving show { with_path = false }]
 
   let constr0 (op: opcode): t =
     { uop = op; opnds = [] }
@@ -165,7 +169,7 @@ end
 
 
 module Meta = struct
-  type t = Label of string
+  type t = Label of string [@@deriving show]
 end
 
 
@@ -174,21 +178,48 @@ module Block = struct
   type kind =
     | Reserved
     | Function
+  [@@deriving show { with_path = false }]
 
   type elem = 
     | Meta of Meta.t
     | Instruction of Instruction.t
+  [@@deriving show { with_path = false }]
+
+  type t = {
+    kind:       kind;
+    start_addr: int option;
+    size:       int option;
+    seq:        elem list;
+    bin:        bytes option;
+  }
 
   let meta (v: Meta.t): elem = Meta v
 
   let instr (v: Instruction.t): elem = Instruction v
 
+  let show_block (block: t): string =
+    String.concat "\n" [
+      Format.sprintf "block [kind: %s] [start addr: %s] [size: %s]:"  
+        (show_kind block.kind)
+        (UOption.do_with_default block.start_addr string_of_int "<none>") 
+        (UOption.do_with_default block.size       string_of_int "<none>");
+      List.map show_elem block.seq |> String.concat "\t\n"
+    ]
+    
+end
+
+
+module CUnit = struct
   type t = {
-    kind: kind;
-    start_addr: int option;
-    size: int option;
-    seq: elem list;
-    bin: bytes option;
+    name:   string;
+    blocks: Block.t list
   }
+
+  let show_unit (unit: t): string =
+    let block_strs = List.map Block.show_block unit.blocks in
+    String.concat "\n\n" (
+      unit.name ::
+      block_strs
+    )
 
 end

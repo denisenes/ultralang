@@ -38,24 +38,26 @@ let consume_directive (stream: Stream.t) (expected: string): unit =
 
 let parse_seq_elem stream: Block.elem =
   let as_operand (w: Instruction.width) (s: string): Instruction.operand =
-  match int_of_string_opt s with
-  | Some num -> begin match w with
-    | W8  -> W8  num
-    | W16 -> W16 num
-    end
-  | None -> 
-    begin if String.starts_with ~prefix:s "$" then
-      Label (Utils.string_tail s 1)
-    else
-      (* Special values*)
-      match s with
-      | "eq" -> W8 0
-      | "gt" -> W8 1
-      | "lt" -> W8 (-1)
-      | _ -> Printf.sprintf "Unknown operand: '%s'" s 
-          |> Parser.error
-    end
-  in
+    match int_of_string_opt s with
+    | Some num -> begin match w with
+      | W8  -> W8  num
+      | W16 -> W16 num
+      end
+    | None -> 
+      begin if String.starts_with ~prefix:"$" s then
+        Label (Utils.UString.string_tail s 1)
+      else
+        (* Special values*)
+        match s with
+        | "eq" -> W8 0
+        | "gt" -> W8 1
+        | "lt" -> W8 (-1)
+        | "W" | "WORD"  -> W8 2
+        | "H" | "HWORD" -> W8 1
+        | _ -> Printf.sprintf "Unknown operand: '%s'" s 
+            |> Parser.errorl stream
+      end
+    in
 
   let read_opnd (opcode: Instruction.opcode) (n: int): Instruction.operand =
     as_operand (Instruction.width opcode n) (Stream.read_token stream)
@@ -118,11 +120,17 @@ let parse_block stream: Block.t =
           |> Parser.errorl stream
 
 
-let parse_blocks stream: Block.t list =
+let parse_blocks stream: CUnit.t =
   consume_directive stream ".asm";
-  Parser.go_until_token stream (fun _ ->
+  let name   = Stream.read_token stream in
+  let blocks = Parser.go_until_token stream (fun _ ->
     parse_block stream
   ) ".endasm"
+  in
+  {
+    name = name;
+    blocks = blocks;
+  }
 
 
 (** Parsing entrypoint *)
