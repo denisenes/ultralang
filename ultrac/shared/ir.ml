@@ -1,5 +1,3 @@
-open Isa
-
 module Node = struct
 
   type value =
@@ -120,17 +118,3 @@ let show_module_desc (md: module_desc): string =
   Format.sprintf "module name[%s]\ndefs[%s\n]" 
     md.name
     (String.concat "" @@ List.map show_def_desc md.defs)
-
-
-type stage_data =
-  | Nothing
-  | Module  of module_desc
-  | LLIR    of CUnit.t
-  | String  of string
-  | Channel of in_channel
-
-
-exception InvalidIRKind of string
-
-let invalid_ir_kind (expected_in: string) (expected_out: string) =
-  raise @@ InvalidIRKind (Format.sprintf "Expected: %s -> %s" expected_in expected_out)

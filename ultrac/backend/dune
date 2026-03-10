@@ -1,0 +1,4 @@
+(library
+ (name backend)
+ (modules indexer emitter)
+ (libraries shared))

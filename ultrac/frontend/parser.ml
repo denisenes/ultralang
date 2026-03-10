@@ -1,6 +1,7 @@
 open Shared
-open Shared.Ir
 open Shared.Log
+open Shared.Ir
+open Shared.Transformer
 open Stream
 
 exception SyntaxError of string
@@ -414,7 +415,7 @@ let parse_module stream: module_desc =
 
 
 (** Parsing entrypoint *)
-let parse (input: stage_data): stage_data =
+let parse : ir_transformer = fun input ->
   match input with
   | Channel chan ->
     let stream = Stream.create chan in

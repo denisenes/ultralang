@@ -59,6 +59,21 @@ module Instruction = struct
     | INT_SET_HANDLER (* int.h   2:8,16 *)
   [@@deriving enum, show { with_path = false }]
 
+  type operand = 
+    | Label of string 
+    | W8    of int 
+    | W16   of int
+  [@@deriving show { with_path = false }]
+  
+  type t = {
+    uop:   opcode;
+    opnds: operand list;
+  }
+  [@@deriving show { with_path = false }]
+
+  let opcode_size = 1
+
+
   let arity: opcode -> int = function
     | HALT | CONST_ZERO | DUP | SWAP | DROP | BIN_ADD | BIN_SUB | BIN_MUL | BIN_DIV | BIN_REM 
     | BIN_OR | BIN_AND | BIN_XOR | BIN_SHR | BIN_SHL | BIN_CMP_U | BIN_CMP_S | UN_NEG | UN_INC | UN_DEC 
@@ -66,6 +81,7 @@ module Instruction = struct
     | CONSTW | CONST | LOAD | LOAD_DYN_OFFS | LOAD_LOC | STORE | STORE_DYN_OFFS | STORE_LOC | BR | BR_IF_DYN 
     | CALL_DYN | LALLOC | LFREE | INT -> 1
     | LOAD_OFFS | STORE_OFFS | BR_IF | CALL | INT_SET_HANDLER -> 2
+
 
   let width (opcode: opcode) (n: int): width = match opcode, n with
   | CONSTW, 0 -> W16
@@ -94,6 +110,13 @@ module Instruction = struct
   | INT_SET_HANDLER, 1 -> W16
   | _ -> Printf.sprintf "[Opcode: %d, operand: %d] incorrect combination" (opcode_to_enum opcode) n
       |> Utils.shouldNotReachHere
+
+
+  let size (instr: t) =
+    let operand_ids = (URange.from_0_to @@ arity instr.uop) in
+    let operand_sizes = List.map (fun x -> width instr.uop x |> width_to_enum) operand_ids in
+    opcode_size + (UList.sum operand_sizes)
+
 
   let from_string: string -> opcode = function
   | "hlt"     -> HALT
@@ -144,17 +167,6 @@ module Instruction = struct
   | "int.h"   -> INT_SET_HANDLER
   | _         -> Utils.shouldNotReachHere "Unknown opcode"
 
-  type operand = 
-    | Label of string 
-    | W8    of int 
-    | W16   of int
-  [@@deriving show { with_path = false }]
-  
-  type t = {
-    uop:   opcode;
-    opnds: operand list;
-  }
-  [@@deriving show { with_path = false }]
 
   let constr0 (op: opcode): t =
     { uop = op; opnds = [] }
@@ -205,14 +217,16 @@ module Block = struct
         (UOption.do_with_default block.size       string_of_int "<none>");
       List.map show_elem block.seq |> String.concat "\t\n"
     ]
-    
+
 end
 
 
 module CUnit = struct
+
   type t = {
-    name:   string;
-    blocks: Block.t list
+    name:    string;
+    blocks:  Block.t list;
+    symbols: int UString.Map.t option (* symbol_name -> address *)
   }
 
   let show_unit (unit: t): string =

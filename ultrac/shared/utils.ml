@@ -33,4 +33,20 @@ module UString = struct
   let string_tail (s: string) (index: int): string =
     String.sub s index (String.length s - 1)
 
+  module Map = Map.Make(String)
+
+end
+
+
+module URange = struct
+  
+  let from_0_to (n: int): int list = List.init n Fun.id
+
+end
+
+
+module UList = struct
+  
+  let sum (lst: int list) = List.fold_left ( + ) 0 lst
+
 end

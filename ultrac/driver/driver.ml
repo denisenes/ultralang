@@ -1,11 +1,10 @@
 open Stages
 open Shared.Ir
 open Shared.Isa
+open Shared.Utils
+open Shared.Transformer
 
 exception ExecutionException of string
-
-module StrMap = Map.Make(String)
-
 
 let read_from_file (str : stage_data) =
   match str with
@@ -31,17 +30,19 @@ let printer (data: stage_data) =
   | _ -> raise (InvalidIRKind "Printer input is invalid")
 
 
-let actions: (stage_data -> stage_data) StrMap.t = StrMap.empty
-  |> StrMap.add "read_stdin" (fun _ -> Channel (In_channel.stdin))
-  |> StrMap.add "read_file"  read_from_file
-  |> StrMap.add "parser"     Frontend.Parser.parse
-  |> StrMap.add "parser-asm" Frontend.Parserasm.parse
-  |> StrMap.add "printer"    printer
-  |> StrMap.add "finish"     (fun _ -> Nothing)
+let actions: (stage_data -> stage_data) UString.Map.t = 
+  let open UString in 
+  Map.empty
+  |> Map.add "read_stdin" (fun _ -> Channel (In_channel.stdin))
+  |> Map.add "read_file"  read_from_file
+  |> Map.add "parser"     Frontend.Parser.parse
+  |> Map.add "parser-asm" Frontend.Parserasm.parse
+  |> Map.add "printer"    printer
+  |> Map.add "finish"     (fun _ -> Nothing)
 
 
 let stage ?(printable: bool = true) (name: string) : Stage.t =
-  let action = StrMap.find name actions in
+  let action = UString.Map.find name actions in
   if printable 
     then Stage.constr name action
     else Stage.constr_hidden name action

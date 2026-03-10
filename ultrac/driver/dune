@@ -1,4 +1,4 @@
 (library
  (name driver)
  (modules driver stages)
- (libraries frontend shared))
+ (libraries frontend backend shared))

@@ -1,7 +1,7 @@
 open Shared
-open Shared.Ir
 open Shared.Log
 open Shared.Isa
+open Shared.Transformer
 
 let sym_marker = '$'
 
@@ -39,7 +39,7 @@ let consume_directive (stream: Stream.t) (expected: string): unit =
 
 
 let parse_seq_elem stream: Block.elem =
-  let as_operand (w: Instruction.width) (s: string): Instruction.operand =
+  let parse_operand (w: Instruction.width) (s: string): Instruction.operand =
     match int_of_string_opt s with
     | Some num -> begin match w with
       | W8  -> W8  num
@@ -62,7 +62,7 @@ let parse_seq_elem stream: Block.elem =
     in
 
   let read_opnd (opcode: Instruction.opcode) (n: int): Instruction.operand =
-    as_operand (Instruction.width opcode n) (Stream.read_token stream)
+    parse_operand (Instruction.width opcode n) (Stream.read_token stream)
   in
 
   match Stream.peek_char stream with
@@ -132,13 +132,14 @@ let parse_blocks stream: CUnit.t =
   {
     name = name;
     blocks = blocks;
+    symbols = None;
   }
 
 
 (** Parsing entrypoint *)
-let parse (input: stage_data): stage_data =
+let parse: ir_transformer = fun input ->
   match input with
   | Channel chan ->
     let stream = Stream.create chan in
     LLIR (parse_blocks stream)
-  | _ -> Shared.Ir.invalid_ir_kind "Channel" "LLIR"
+  | _ -> invalid_ir_kind "Channel" "LLIR"

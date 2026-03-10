@@ -1,9 +1,9 @@
-open Shared.Ir
+open Shared.Transformer
 
 module Stage = struct
   type t = {
     name:         string;
-    action:       (stage_data -> stage_data);
+    action:       ir_transformer;
     is_printable: bool
   }
 
