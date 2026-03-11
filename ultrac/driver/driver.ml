@@ -6,13 +6,21 @@ open Shared.Transformer
 
 exception ExecutionException of string
 
-let read_from_file (str : stage_data) =
-  match str with
+let read_from_file: ir_transformer = function
   | String s -> Channel (open_in s)
-  | _ -> raise (End_of_file)
+  | _ -> invalid_ir_kind "String" "Channel"
 
 
-let printer (data: stage_data) =
+let write_image_to_file: ir_transformer = function
+  | Image img -> 
+    let ch = open_out_bin "out.img" in
+    Out_channel.output_bytes ch img;
+    Out_channel.close ch;
+    Nothing
+  | _ -> invalid_ir_kind "Image" "Nothing"
+
+
+let printer: ir_transformer = fun data ->
   match data with
   | Module m ->
     let ch = Out_channel.open_text (m.name ^ ".ast") in
@@ -20,25 +28,28 @@ let printer (data: stage_data) =
     let _  = Out_channel.output_string ch @@ Shared.Type.AdtRegistry.show() in
     let _  = 
       Out_channel.close ch in
-      Nothing
+      data
   | LLIR llir ->
     let ch = Out_channel.open_text (llir.name ^ ".llir") in
     let _ = Out_channel.output_string ch @@ CUnit.show_unit llir in
     let _ =
       Out_channel.close ch in
-      Nothing
+      data
   | _ -> raise (InvalidIRKind "Printer input is invalid")
 
 
 let actions: (stage_data -> stage_data) UString.Map.t = 
   let open UString in 
   Map.empty
-  |> Map.add "read_stdin" (fun _ -> Channel (In_channel.stdin))
-  |> Map.add "read_file"  read_from_file
-  |> Map.add "parser"     Frontend.Parser.parse
-  |> Map.add "parser-asm" Frontend.Parserasm.parse
-  |> Map.add "printer"    printer
-  |> Map.add "finish"     (fun _ -> Nothing)
+  |> Map.add "source/read_stdin"   (fun _ -> Channel (In_channel.stdin))
+  |> Map.add "source/read_file"    read_from_file
+  |> Map.add "frontend/parser"     Frontend.Parser.parse
+  |> Map.add "frontend/parser-asm" Frontend.Parserasm.parse
+  |> Map.add "backend/indexer"     Backend.Indexer.index
+  |> Map.add "backend/emitter"     Backend.Emitter.emit_image
+  |> Map.add "helper/printer"      printer
+  |> Map.add "helper/finish"       (fun _ -> Nothing)
+  |> Map.add "output/write_image"  write_image_to_file
 
 
 let stage ?(printable: bool = true) (name: string) : Stage.t =
@@ -51,18 +62,22 @@ let stage ?(printable: bool = true) (name: string) : Stage.t =
 let driver_compile filename =
   Stages.stages_executor (String filename)
   [|
-    stage "read_file";
-    stage "parser";
-    stage "printer";
+    stage "source/read_file";
+    stage "frontend/parser";
+    stage "helper/printer";
+    stage "helper/finish";
   |]
 
 
 let driver_asm filename =
   Stages.stages_executor (String filename)
   [|
-    stage "read_file";
-    stage "parser-asm";
-    stage "printer";
+    stage "source/read_file";
+    stage "frontend/parser-asm";
+    stage "backend/indexer";
+    stage "helper/printer";
+    stage "backend/emitter";
+    stage "output/write_image";
   |]
 
 

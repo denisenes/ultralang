@@ -22,7 +22,7 @@ let as_range (v: string): int =
   | None -> match v with
     | "word"  -> word_size
     | "hword" -> hword_size
-    | s -> Printf.sprintf "Unknown range: '%s'" s |> Parser.error
+    | s -> Printf.sprintf "Unknown range: '%s'" s |> Errors.syntax_error
 
 
 let read_symbol (stream: Stream.t): string =
@@ -39,9 +39,11 @@ let consume_directive (stream: Stream.t) (expected: string): unit =
 
 
 let parse_seq_elem stream: Block.elem =
-  let parse_operand (w: Instruction.width) (s: string): Instruction.operand =
+  let open Instruction in
+
+  let parse_operand (w: width) (s: string): operand =
     match int_of_string_opt s with
-    | Some num -> begin match w with
+    | Some num -> begin match w with (* TODO check bounds *)
       | W8  -> W8  num
       | W16 -> W16 num
       end
@@ -59,10 +61,10 @@ let parse_seq_elem stream: Block.elem =
         | _ -> Printf.sprintf "Unknown operand: '%s'" s 
             |> Parser.errorl stream
       end
-    in
+  in
 
-  let read_opnd (opcode: Instruction.opcode) (n: int): Instruction.operand =
-    parse_operand (Instruction.width opcode n) (Stream.read_token stream)
+  let read_opnd (opcode: opcode) (n: int): operand =
+    parse_operand (width opcode n) (Stream.read_token stream)
   in
 
   match Stream.peek_char stream with
@@ -72,14 +74,24 @@ let parse_seq_elem stream: Block.elem =
     res
   | _ -> 
     begin
-      let opcode = Stream.read_token stream |> Instruction.from_string in
-      let instr = match Instruction.arity opcode with
-      | 0 -> Instruction.constr0 opcode
-      | 1 -> Instruction.constr1 opcode (read_opnd opcode 0) 
-      | 2 -> Instruction.constr2 opcode (read_opnd opcode 0) (read_opnd opcode 1)
-      | 3 -> Instruction.constr3 opcode (read_opnd opcode 0) (read_opnd opcode 1) (read_opnd opcode 2)
+      let opcode = Stream.read_token stream |> from_string in
+      let instr = match arity opcode with
+      (* Lets below are important for execution order, do not simplify them *)
+      | 0 -> constr0 opcode
+      | 1 ->
+        let op1 = (read_opnd opcode 0) in
+        constr1 opcode op1
+      | 2 -> 
+        let op1 = (read_opnd opcode 0) in
+        let op2 = (read_opnd opcode 1) in
+        constr2 opcode op1 op2
+      | 3 -> 
+        let op1 = (read_opnd opcode 0) in
+        let op2 = (read_opnd opcode 1) in
+        let op3 = (read_opnd opcode 2) in
+        constr3 opcode op1 op2 op3
       | n -> Format.sprintf "Impossible number of operands: %d" n
-          |> Shared.Utils.shouldNotReachHere
+          |> Errors.should_not_reach_here
       in Block.instr instr
     end
 
@@ -129,11 +141,7 @@ let parse_blocks stream: CUnit.t =
     parse_block stream
   ) ".endasm"
   in
-  {
-    name = name;
-    blocks = blocks;
-    symbols = None;
-  }
+  CUnit.constr name blocks
 
 
 (** Parsing entrypoint *)

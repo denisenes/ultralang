@@ -1,8 +1,9 @@
 .asm SanityTest1
 
-.function test:
+.function $test:
     val.w 123
     val.w 321
     add
+    hlt
 
 .endasm

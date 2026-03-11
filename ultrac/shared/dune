@@ -1,4 +1,4 @@
 (library
  (name shared)
  (preprocess (pps ppx_deriving.show ppx_deriving.enum))
- (modules ir isa transformer type log utils))
+ (modules ir isa transformer type log utils errors))

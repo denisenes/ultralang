@@ -1,9 +1,5 @@
-let word_size  = 2 (* bytes *)
-let hword_size = 1 (* byte *)
-
-exception InternalError of string
-
-let shouldNotReachHere (msg: string): 'a = InternalError msg |> raise
+let word_size  = 2 (* bytes *) (* TODO move to Shared.Isa.Platform *) 
+let hword_size = 1 (* byte *) (* TODO move to Shared.Isa.Platform *)
 
 
 module UOption = struct
@@ -34,6 +30,8 @@ module UString = struct
     String.sub s index (String.length s - 1)
 
   module Map = Map.Make(String)
+
+  module HashMap = Hashtbl.Make(String)
 
 end
 

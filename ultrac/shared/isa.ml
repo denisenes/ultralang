@@ -1,11 +1,20 @@
 open Utils
 
+module Platform = struct
+
+  let red_zone_size = 8
+
+  let image_size = 64 * 1024 (* 64 Kb *)
+
+end
+
+
 module Instruction = struct
 
+  (* TODO move to Platform ? *)
   type width =
   | W8
   | W16
-  [@@deriving enum]
 
   (** ! Keep consistent with
    *  ${PROJECT_DIR}/ucorn/emulator/isa.h !
@@ -74,6 +83,11 @@ module Instruction = struct
   let opcode_size = 1
 
 
+  let width_to_bytes: width -> int = function
+  | W8 -> 1
+  | W16 -> 2
+
+
   let arity: opcode -> int = function
     | HALT | CONST_ZERO | DUP | SWAP | DROP | BIN_ADD | BIN_SUB | BIN_MUL | BIN_DIV | BIN_REM 
     | BIN_OR | BIN_AND | BIN_XOR | BIN_SHR | BIN_SHL | BIN_CMP_U | BIN_CMP_S | UN_NEG | UN_INC | UN_DEC 
@@ -109,12 +123,12 @@ module Instruction = struct
   | INT_SET_HANDLER, 0 -> W8
   | INT_SET_HANDLER, 1 -> W16
   | _ -> Printf.sprintf "[Opcode: %d, operand: %d] incorrect combination" (opcode_to_enum opcode) n
-      |> Utils.shouldNotReachHere
+      |> Errors.should_not_reach_here
 
 
   let size (instr: t) =
     let operand_ids = (URange.from_0_to @@ arity instr.uop) in
-    let operand_sizes = List.map (fun x -> width instr.uop x |> width_to_enum) operand_ids in
+    let operand_sizes = List.map (fun x -> width instr.uop x |> width_to_bytes) operand_ids in
     opcode_size + (UList.sum operand_sizes)
 
 
@@ -165,7 +179,8 @@ module Instruction = struct
   | "lfree"   -> LFREE
   | "int"     -> INT
   | "int.h"   -> INT_SET_HANDLER
-  | _         -> Utils.shouldNotReachHere "Unknown opcode"
+  | opcode         -> Format.sprintf "Unknown opcode: %s" opcode
+                   |> Errors.should_not_reach_here
 
 
   let constr0 (op: opcode): t =
@@ -198,11 +213,11 @@ module Block = struct
   [@@deriving show { with_path = false }]
 
   type t = {
-    kind:       kind;
-    start_addr: int option;
-    size:       int option;
-    seq:        elem list;
-    bin:        bytes option;
+    kind:               kind;
+    seq:                elem list;
+    mutable start_addr: int option;
+    mutable size:       int option;
+    mutable bin:        bytes option;
   }
 
   let meta (v: Meta.t): elem = Meta v
@@ -218,6 +233,8 @@ module Block = struct
       List.map show_elem block.seq |> String.concat "\t\n"
     ]
 
+  let foreach_elem (b: t) (action: elem -> unit): unit = List.iter action b.seq
+
 end
 
 
@@ -226,14 +243,36 @@ module CUnit = struct
   type t = {
     name:    string;
     blocks:  Block.t list;
-    symbols: int UString.Map.t option (* symbol_name -> address *)
+    symbols: int UString.HashMap.t (* symbol_name -> address *)
+  }
+
+  let constr (name: string) (blocks: Block.t list) = {
+    name = name;
+    blocks = blocks;
+    symbols = UString.HashMap.create 64
   }
 
   let show_unit (unit: t): string =
     let block_strs = List.map Block.show_block unit.blocks in
+    let sym_tab = UString.HashMap.fold (fun key value acc ->
+        (Format.sprintf "%s: %d" key value) :: acc
+      ) unit.symbols [] 
+    in
+    let sym_tab_str = "Symbol table:\n" ^ (String.concat "\n" sym_tab) in
     String.concat "\n\n" (
       unit.name ::
+      sym_tab_str ::
       block_strs
     )
+
+  let foreach_block (unit: t) (action: Block.t -> unit): unit = List.iter action unit.blocks
+
+  let lookup_symbol (unit: t) (sym_name: string): int =
+    let res = UString.HashMap.find_opt unit.symbols sym_name in
+    match res with
+    | Some symbol_addr -> symbol_addr
+    | None -> Format.sprintf "Couldn't find symbol: %s" sym_name 
+           |> Errors.sema_error 
+      
 
 end

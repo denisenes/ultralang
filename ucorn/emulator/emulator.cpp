@@ -5,6 +5,7 @@
 #include <list>
 #include <vector>
 #include <string>
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <bitset>
@@ -13,6 +14,8 @@
 #include <map>
 
 #include "isa.h"
+
+#define LOGGING_ENABLED
 
 #define ERROR_EXECUTION 0
 #define ERROR_RED_ZONE  1
@@ -62,8 +65,8 @@ using I8  = int8_t;
 using I16 = int16_t;
 
 enum AccessWidth {
-    W8,
-    W16
+    W8  = 0x1,
+    W16 = 0x2
 };
 
 class Register {
@@ -118,7 +121,7 @@ class State {
             lsp(DEFAULT_LSB_ON_START), lsb(DEFAULT_LSB_ON_START), lfp(DEFAULT_LSB_ON_START),
             osp(DEFAULT_OSB_ON_START), osb(DEFAULT_OSB_ON_START)    
         {
-            image.read(reinterpret_cast<char*>(memory.data() + RED_ZONE_END), imageSize);
+            image.read(reinterpret_cast<char*>(memory.data()), imageSize);
         }
 
         U16 ipConsume8() {
@@ -155,13 +158,17 @@ class State {
             return res.get();
         }
 
-        void dump(std::ostream& stream) {
+        void dump(std::ostream& stream, bool isVerbose) {
             stream << "IP:  " << ip.asStrVerbose()  << "\n";
             stream << "LSP: " << lsp.asStrVerbose() << "\n";
             stream << "OSP: " << osp.asStrVerbose() << "\n";
             stream << "Operand stack:\n";
             for (auto& operand : operandStack) {
                 stream << "\t" << operand.asStrVerbose() << "\n"; 
+            }
+
+            if (!isVerbose) {
+                return;
             }
 
             stream << "Memory:\n";
@@ -332,7 +339,7 @@ void binOp(State& state, std::function<U16(U16, U16)> op) {
 void interpretationLoop(State& state, InterruptController intController) {
     while (true) {
         U16 opcode = state.ipConsume8();
-        LOG("Opcode: %u\n", opcode);
+        LOG("Opcode: 0x%x\n", opcode);
 
         // TODO debug mode
 
@@ -436,7 +443,8 @@ void interpretationLoop(State& state, InterruptController intController) {
                     (opcode == LOAD_DYN_OFFS) ? state.pop()         :
                     0;
 
-                state.loadFromMemory(width, address + offset);
+                U16 loaded = state.loadFromMemory(width, address + offset);
+                state.push(loaded);
                 break;
             }
             case STORE:
@@ -500,7 +508,7 @@ void interpretationLoop(State& state, InterruptController intController) {
     }
 }
 
-void interpret(char* imagePath) {
+void interpret(char* imagePath, bool isVerbose) {
     size_t imageSize = std::filesystem::file_size(imagePath);
     std::ifstream image(imagePath, std::ios::binary);
     
@@ -509,16 +517,28 @@ void interpret(char* imagePath) {
 
     interpretationLoop(state, intController);
 
-    state.dump(std::cout);
+    state.dump(std::cout, isVerbose);
 }
 
 int main(int argc, char** argv) {
-    if (argc < 2) {
-        printf("Usage: ucorn-emu <path to .img>\n");
-        return 1;
+    bool isVerbose = false;
+    char* imagePath; 
+
+    switch (argc) {
+        case 2:
+            imagePath = argv[1];
+            break;
+        case 3:
+            if (strcmp(argv[1], "-v") == 0) isVerbose = true;
+            imagePath = argv[2];
+            break;
+        default:
+            printf("Usage: ucorn-emu <path to .img>\n");
+            return 1;
     }
-    
-    interpret(argv[1]);
+
+
+    interpret(imagePath, isVerbose);
     
     return 0;
 }

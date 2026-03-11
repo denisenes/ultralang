@@ -4,16 +4,10 @@ open Shared.Ir
 open Shared.Transformer
 open Stream
 
-exception SyntaxError of string
-
-
-let error (msg: string) = 
-  raise @@ SyntaxError msg
-
 
 let errorl (stream: Stream.t) (msg: string) = 
   let prefix = Stream.current_pos stream in
-  error (prefix ^ " " ^ msg)
+  Errors.syntax_error (prefix ^ " " ^ msg)
 
 
 let is_valid_ident ?(kind: Token.identifier_kind = Lower) (ident: string): bool =
@@ -195,7 +189,7 @@ let rec parse_call_args stream: Node.t list =
 
 and parse_list_literal stream : Node.t list =
   match read_char stream with
-  | ']' -> error "Internal error" (* This case should be checked by caller *)
+  | ']' -> Errors.syntax_error "Internal error" (* This case should be checked by caller *)
   | c   ->
     unread_char stream c;
     let fst = parse_infix_exp stream in

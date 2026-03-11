@@ -7,6 +7,7 @@
     val.w 312
     val.w $b
     st WORD
+
     br $compute
 
 .res $a      word
@@ -18,17 +19,22 @@
     ld WORD
     val.w $b
     ld WORD 
+
     sub
+
     cmp.zs
     br.if eq $eq
 $neq:
-    val.w 127
-    br $end
+    val.w 
+    br $epilogue
 $eq:
-    val.w 63
+    val.w 42
 $epilogue:
     val.w $result
     st WORD
+
+    val.w $result
+    ld WORD
     hlt
     
 .endasm
