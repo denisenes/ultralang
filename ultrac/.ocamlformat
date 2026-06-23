@@ -1,0 +1,7 @@
+profile = conventional
+version = 0.27.0
+
+type-decl = sparse
+break-cases = vertical
+margin = 80
+

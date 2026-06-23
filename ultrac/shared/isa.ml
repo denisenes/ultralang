@@ -1,21 +1,15 @@
 open Utils
 
 module Platform = struct
-
   let red_zone_size = 8
-
   let image_size = 64 * 1024 (* 64 Kb *)
-
 end
 
-
 module Instruction = struct
-
   (* TODO move to Platform ? *)
-  type width =
-  | W8
-  | W16
+  type width = W8 | W16
 
+[@@@ocamlformat "disable"]
   (** ! Keep consistent with
    *  ${PROJECT_DIR}/ucorn/emulator/isa.h !
    *)
@@ -67,212 +61,189 @@ module Instruction = struct
     | INT             (* int     1:8 *)
     | INT_SET_HANDLER (* int.h   2:8,16 *)
   [@@deriving enum, show { with_path = false }]
+[@@@ocamlformat "enable"]
 
-  type operand = 
-    | Label of string 
-    | W8    of int 
-    | W16   of int
+  type operand = Label of string | W8 of int | W16 of int
   [@@deriving show { with_path = false }]
-  
-  type t = {
-    uop:   opcode;
-    opnds: operand list;
-  }
+
+  type t = { uop : opcode; opnds : operand list }
   [@@deriving show { with_path = false }]
 
   let opcode_size = 1
+  let width_to_bytes : width -> int = function W8 -> 1 | W16 -> 2
 
-
-  let width_to_bytes: width -> int = function
-  | W8 -> 1
-  | W16 -> 2
-
-
-  let arity: opcode -> int = function
-    | HALT | CONST_ZERO | DUP | SWAP | DROP | BIN_ADD | BIN_SUB | BIN_MUL | BIN_DIV | BIN_REM 
-    | BIN_OR | BIN_AND | BIN_XOR | BIN_SHR | BIN_SHL | BIN_CMP_U | BIN_CMP_S | UN_NEG | UN_INC | UN_DEC 
-    | UN_CMP_ZERO_U | UN_CMP_ZERO_S | UN_LOW | UN_HIGH | LOAD_IP | BR_DYN | RET -> 0
-    | CONSTW | CONST | LOAD | LOAD_DYN_OFFS | LOAD_LOC | STORE | STORE_DYN_OFFS | STORE_LOC | BR | BR_IF_DYN 
-    | CALL_DYN | LALLOC | LFREE | INT -> 1
+  let arity : opcode -> int = function
+    | HALT | CONST_ZERO | DUP | SWAP | DROP | BIN_ADD | BIN_SUB | BIN_MUL
+    | BIN_DIV | BIN_REM | BIN_OR | BIN_AND | BIN_XOR | BIN_SHR | BIN_SHL
+    | BIN_CMP_U | BIN_CMP_S | UN_NEG | UN_INC | UN_DEC | UN_CMP_ZERO_U
+    | UN_CMP_ZERO_S | UN_LOW | UN_HIGH | LOAD_IP | BR_DYN | RET ->
+        0
+    | CONSTW | CONST | LOAD | LOAD_DYN_OFFS | LOAD_LOC | STORE | STORE_DYN_OFFS
+    | STORE_LOC | BR | BR_IF_DYN | CALL_DYN | LALLOC | LFREE | INT ->
+        1
     | LOAD_OFFS | STORE_OFFS | BR_IF | CALL | INT_SET_HANDLER -> 2
 
+  let width (opcode : opcode) (n : int) : width =
+    match (opcode, n) with
+    | CONSTW, 0 -> W16
+    | CONST, 0 -> W8
+    | LOAD, 0 -> W8
+    | LOAD_OFFS, 0 -> W8
+    | LOAD_OFFS, 1 -> W16
+    | LOAD_DYN_OFFS, 0 -> W8
+    | LOAD_LOC, 0 -> W16
+    | STORE, 0 -> W8
+    | STORE_OFFS, 0 -> W8
+    | STORE_OFFS, 1 -> W16
+    | STORE_DYN_OFFS, 0 -> W8
+    | STORE_LOC, 0 -> W16
+    | BR, 0 -> W16
+    | BR_IF, 0 -> W8
+    | BR_IF, 1 -> W16
+    | BR_IF_DYN, 0 -> W8
+    | CALL, 0 -> W16
+    | CALL, 1 -> W8
+    | CALL_DYN, 0 -> W8
+    | LALLOC, 0 -> W16
+    | LFREE, 0 -> W16
+    | INT, 0 -> W8
+    | INT_SET_HANDLER, 0 -> W8
+    | INT_SET_HANDLER, 1 -> W16
+    | _ ->
+        Printf.sprintf "[Opcode: %d, operand: %d] incorrect combination"
+          (opcode_to_enum opcode) n
+        |> Errors.should_not_reach_here
 
-  let width (opcode: opcode) (n: int): width = match opcode, n with
-  | CONSTW, 0 -> W16
-  | CONST, 0 -> W8
-  | LOAD, 0 -> W8
-  | LOAD_OFFS, 0 -> W8
-  | LOAD_OFFS, 1 -> W16
-  | LOAD_DYN_OFFS, 0 -> W8
-  | LOAD_LOC, 0 -> W16
-  | STORE, 0 -> W8
-  | STORE_OFFS, 0 -> W8
-  | STORE_OFFS, 1 -> W16
-  | STORE_DYN_OFFS, 0 -> W8
-  | STORE_LOC, 0 -> W16
-  | BR, 0 -> W16
-  | BR_IF, 0 -> W8
-  | BR_IF, 1 -> W16
-  | BR_IF_DYN, 0 -> W8
-  | CALL, 0 -> W16
-  | CALL, 1 -> W8
-  | CALL_DYN, 0 -> W8
-  | LALLOC, 0 -> W16
-  | LFREE, 0 -> W16
-  | INT, 0 -> W8
-  | INT_SET_HANDLER, 0 -> W8
-  | INT_SET_HANDLER, 1 -> W16
-  | _ -> Printf.sprintf "[Opcode: %d, operand: %d] incorrect combination" (opcode_to_enum opcode) n
-      |> Errors.should_not_reach_here
+  let size (instr : t) =
+    let operand_ids = URange.from_0_to @@ arity instr.uop in
+    let operand_sizes =
+      List.map (fun x -> width instr.uop x |> width_to_bytes) operand_ids
+    in
+    opcode_size + UList.sum operand_sizes
 
+  let from_string : string -> opcode = function
+    | "hlt" -> HALT
+    | "val.z" -> CONST_ZERO
+    | "val.w" -> CONSTW
+    | "val" -> CONST
+    | "dup" -> DUP
+    | "swp" -> SWAP
+    | "drp" -> DROP
+    | "add" -> BIN_ADD
+    | "sub" -> BIN_SUB
+    | "mul" -> BIN_MUL
+    | "div" -> BIN_DIV
+    | "rem" -> BIN_REM
+    | "and" -> BIN_AND
+    | "or" -> BIN_OR
+    | "xor" -> BIN_XOR
+    | "shr" -> BIN_SHR
+    | "shl" -> BIN_SHL
+    | "cmp.u" -> BIN_CMP_U
+    | "cmp.s" -> BIN_CMP_S
+    | "neg" -> UN_NEG
+    | "inc" -> UN_INC
+    | "dec" -> UN_DEC
+    | "cmp.zu" -> UN_CMP_ZERO_U
+    | "cmp.zs" -> UN_CMP_ZERO_S
+    | "lo" -> UN_LOW
+    | "hi" -> UN_HIGH
+    | "ld.ip" -> LOAD_IP
+    | "ld" -> LOAD
+    | "ld.o" -> LOAD_OFFS
+    | "ld.d" -> LOAD_DYN_OFFS
+    | "ld.l" -> LOAD_LOC
+    | "st" -> STORE
+    | "st.o" -> STORE_OFFS
+    | "st.d" -> STORE_DYN_OFFS
+    | "st.l" -> STORE_LOC
+    | "br" -> BR
+    | "br.d" -> BR_DYN
+    | "br.if" -> BR_IF
+    | "br.id" -> BR_IF_DYN
+    | "call" -> CALL
+    | "call.d" -> CALL_DYN
+    | "ret" -> RET
+    | "lalloc" -> LALLOC
+    | "lfree" -> LFREE
+    | "int" -> INT
+    | "int.h" -> INT_SET_HANDLER
+    | opcode ->
+        Format.sprintf "Unknown opcode: %s" opcode
+        |> Errors.should_not_reach_here
 
-  let size (instr: t) =
-    let operand_ids = (URange.from_0_to @@ arity instr.uop) in
-    let operand_sizes = List.map (fun x -> width instr.uop x |> width_to_bytes) operand_ids in
-    opcode_size + (UList.sum operand_sizes)
+  let constr0 (op : opcode) : t = { uop = op; opnds = [] }
+  let constr1 (op : opcode) (arg1 : operand) = { uop = op; opnds = [ arg1 ] }
 
+  let constr2 (op : opcode) (arg1 : operand) (arg2 : operand) =
+    { uop = op; opnds = [ arg1; arg2 ] }
 
-  let from_string: string -> opcode = function
-  | "hlt"     -> HALT
-  | "val.z"   -> CONST_ZERO
-  | "val.w"   -> CONSTW
-  | "val"     -> CONST
-  | "dup"     -> DUP
-  | "swp"     -> SWAP
-  | "drp"     -> DROP
-  | "add"     -> BIN_ADD
-  | "sub"     -> BIN_SUB
-  | "mul"     -> BIN_MUL
-  | "div"     -> BIN_DIV
-  | "rem"     -> BIN_REM
-  | "and"     -> BIN_AND
-  | "or"      -> BIN_OR
-  | "xor"     -> BIN_XOR
-  | "shr"     -> BIN_SHR
-  | "shl"     -> BIN_SHL
-  | "cmp.u"   -> BIN_CMP_U
-  | "cmp.s"   -> BIN_CMP_S
-  | "neg"     -> UN_NEG
-  | "inc"     -> UN_INC
-  | "dec"     -> UN_DEC
-  | "cmp.zu"  -> UN_CMP_ZERO_U
-  | "cmp.zs"  -> UN_CMP_ZERO_S
-  | "lo"      -> UN_LOW
-  | "hi"      -> UN_HIGH
-  | "ld.ip"   -> LOAD_IP
-  | "ld"      -> LOAD
-  | "ld.o"    -> LOAD_OFFS
-  | "ld.d"    -> LOAD_DYN_OFFS
-  | "ld.l"    -> LOAD_LOC
-  | "st"      -> STORE
-  | "st.o"    -> STORE_OFFS
-  | "st.d"    -> STORE_DYN_OFFS
-  | "st.l"    -> STORE_LOC
-  | "br"      -> BR
-  | "br.d"    -> BR_DYN
-  | "br.if"   -> BR_IF
-  | "br.id"   -> BR_IF_DYN
-  | "call"    -> CALL
-  | "call.d"  -> CALL_DYN
-  | "ret"     -> RET
-  | "lalloc"  -> LALLOC
-  | "lfree"   -> LFREE
-  | "int"     -> INT
-  | "int.h"   -> INT_SET_HANDLER
-  | opcode         -> Format.sprintf "Unknown opcode: %s" opcode
-                   |> Errors.should_not_reach_here
-
-
-  let constr0 (op: opcode): t =
-    { uop = op; opnds = [] }
-  let constr1 (op: opcode) (arg1: operand) =
-    { uop = op; opnds = [arg1] }
-  let constr2 (op: opcode) (arg1: operand) (arg2: operand) =
-    { uop = op; opnds = [arg1; arg2] }
-  let constr3 (op: opcode) (arg1: operand) (arg2: operand) (arg3: operand) =
-    { uop = op; opnds = [arg1; arg2; arg3] }
-
+  let constr3 (op : opcode) (arg1 : operand) (arg2 : operand) (arg3 : operand) =
+    { uop = op; opnds = [ arg1; arg2; arg3 ] }
 end
-
 
 module Meta = struct
   type t = Label of string [@@deriving show]
 end
 
-
 module Block = struct
+  type kind = Reserved | Function [@@deriving show { with_path = false }]
 
-  type kind =
-    | Reserved
-    | Function
-  [@@deriving show { with_path = false }]
-
-  type elem = 
-    | Meta of Meta.t
-    | Instruction of Instruction.t
+  type elem = Meta of Meta.t | Instruction of Instruction.t
   [@@deriving show { with_path = false }]
 
   type t = {
-    kind:               kind;
-    seq:                elem list;
-    mutable start_addr: int option;
-    mutable size:       int option;
-    mutable bin:        bytes option;
+    kind : kind;
+    seq : elem list;
+    mutable start_addr : int option;
+    mutable size : int option;
+    mutable bin : bytes option;
   }
 
-  let meta (v: Meta.t): elem = Meta v
+  let meta (v : Meta.t) : elem = Meta v
+  let instr (v : Instruction.t) : elem = Instruction v
 
-  let instr (v: Instruction.t): elem = Instruction v
+  let show_block (block : t) : string =
+    String.concat "\n"
+      [
+        Format.sprintf "block [kind: %s] [start addr: %s] [size: %s]:"
+          (show_kind block.kind)
+          (UOption.do_with_default block.start_addr string_of_int "<none>")
+          (UOption.do_with_default block.size string_of_int "<none>");
+        List.map show_elem block.seq |> String.concat "\t\n";
+      ]
 
-  let show_block (block: t): string =
-    String.concat "\n" [
-      Format.sprintf "block [kind: %s] [start addr: %s] [size: %s]:"  
-        (show_kind block.kind)
-        (UOption.do_with_default block.start_addr string_of_int "<none>") 
-        (UOption.do_with_default block.size       string_of_int "<none>");
-      List.map show_elem block.seq |> String.concat "\t\n"
-    ]
-
-  let foreach_elem (b: t) (action: elem -> unit): unit = List.iter action b.seq
-
+  let foreach_elem (b : t) (action : elem -> unit) : unit =
+    List.iter action b.seq
 end
 
-
 module CUnit = struct
-
   type t = {
-    name:    string;
-    blocks:  Block.t list;
-    symbols: int UString.HashMap.t (* symbol_name -> address *)
+    name : string;
+    blocks : Block.t list;
+    symbols : int UString.HashMap.t (* symbol_name -> address *);
   }
 
-  let constr (name: string) (blocks: Block.t list) = {
-    name = name;
-    blocks = blocks;
-    symbols = UString.HashMap.create 64
-  }
+  let constr (name : string) (blocks : Block.t list) =
+    { name; blocks; symbols = UString.HashMap.create 64 }
 
-  let show_unit (unit: t): string =
+  let show_unit (unit : t) : string =
     let block_strs = List.map Block.show_block unit.blocks in
-    let sym_tab = UString.HashMap.fold (fun key value acc ->
-        (Format.sprintf "%s: %d" key value) :: acc
-      ) unit.symbols [] 
+    let sym_tab =
+      UString.HashMap.fold
+        (fun key value acc -> Format.sprintf "%s: %d" key value :: acc)
+        unit.symbols []
     in
-    let sym_tab_str = "Symbol table:\n" ^ (String.concat "\n" sym_tab) in
-    String.concat "\n\n" (
-      unit.name ::
-      sym_tab_str ::
-      block_strs
-    )
+    let sym_tab_str = "Symbol table:\n" ^ String.concat "\n" sym_tab in
+    String.concat "\n\n" (unit.name :: sym_tab_str :: block_strs)
 
-  let foreach_block (unit: t) (action: Block.t -> unit): unit = List.iter action unit.blocks
+  let foreach_block (unit : t) (action : Block.t -> unit) : unit =
+    List.iter action unit.blocks
 
-  let lookup_symbol (unit: t) (sym_name: string): int =
+  let lookup_symbol (unit : t) (sym_name : string) : int =
     let res = UString.HashMap.find_opt unit.symbols sym_name in
     match res with
     | Some symbol_addr -> symbol_addr
-    | None -> Format.sprintf "Couldn't find symbol: %s" sym_name 
-           |> Errors.sema_error 
-      
-
+    | None ->
+        Format.sprintf "Couldn't find symbol: %s" sym_name |> Errors.sema_error
 end

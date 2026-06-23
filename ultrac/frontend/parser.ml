@@ -4,414 +4,427 @@ open Shared.Ir
 open Shared.Transformer
 open Stream
 
-
-let errorl (stream: Stream.t) (msg: string) = 
+let errorl (stream : Stream.t) (msg : string) =
   let prefix = Stream.current_pos stream in
   Errors.syntax_error (prefix ^ " " ^ msg)
 
+let is_valid_ident ?(kind : Token.identifier_kind = Lower) (ident : string) :
+    bool =
+  if Token.is_keyword ident then false
+  else
+    let first_char = String.get ident 0 in
+    match kind with
+    | Lower ->
+        Token.is_lower_identifier_start first_char
+        && String.for_all Token.is_lower_identifier_char ident
+    | Upper ->
+        Token.is_upper_identifier_start first_char
+        && String.for_all Token.is_upper_identifier_char ident
 
-let is_valid_ident ?(kind: Token.identifier_kind = Lower) (ident: string): bool =
-  if Token.is_keyword ident 
-    then false
-    else
-      let first_char = String.get ident 0 in
-      match kind with
-      | Lower -> 
-        (Token.is_lower_identifier_start first_char) &&
-        String.for_all Token.is_lower_identifier_char ident
-      | Upper ->
-        (Token.is_upper_identifier_start first_char) &&
-        String.for_all Token.is_upper_identifier_char ident      
-
-
-let ident ?(kind: Token.identifier_kind = Lower) (stream: Stream.t): string =
+let ident ?(kind : Token.identifier_kind = Lower) (stream : Stream.t) : string =
   let ident = read_token stream in
-  if is_valid_ident ~kind ident
-    then ident
-    else errorl stream @@ Printf.sprintf "Incorrect identifier: '%s'" ident
+  if is_valid_ident ~kind ident then ident
+  else errorl stream @@ Printf.sprintf "Incorrect identifier: '%s'" ident
 
-
-let consume_keyword (stream: Stream.t) (expected: string): unit =
+let consume_keyword (stream : Stream.t) (expected : string) : unit =
   let actual = read_token stream in
-  if Token.is_keyword actual && actual = expected 
-    then begin
-      logMsg PARSER @@ Format.sprintf "Consumed keyword %s" expected;
-      ()
-    end else errorl stream @@ Printf.sprintf "Unexpected token. Expected: '%s', actual: '%s'" expected actual
+  if Token.is_keyword actual && actual = expected then (
+    logMsg PARSER @@ Format.sprintf "Consumed keyword %s" expected;
+    ())
+  else
+    errorl stream
+    @@ Printf.sprintf "Unexpected token. Expected: '%s', actual: '%s'" expected
+         actual
 
-
-let consume_char (stream: Stream.t) (expected: char) =
+let consume_char (stream : Stream.t) (expected : char) =
   skip_whitespaces stream;
   let c = read_char stream in
-  if c = expected
-    then ()
-    else errorl stream @@ Printf.sprintf "Unexpected character. Expected: '%c', actual: '%c'" expected c
+  if c = expected then ()
+  else
+    errorl stream
+    @@ Printf.sprintf "Unexpected character. Expected: '%c', actual: '%c'"
+         expected c
 
-
-let go_until (stream: Stream.t) (action: (Stream.t -> 'a)) (pred: unit -> bool): 'a list =
-  let rec consume_until' acc: 'a list =
-    if pred()
-      then acc 
-      else consume_until' (acc @ [action stream])  
+let go_until (stream : Stream.t) (action : Stream.t -> 'a) (pred : unit -> bool)
+    : 'a list =
+  let rec consume_until' acc : 'a list =
+    if pred () then acc else consume_until' (acc @ [ action stream ])
   in
   consume_until' []
 
-
-let go_until_token (stream: Stream.t) (action: (Stream.t -> 'a)) (expected: string) =
-  let res = go_until stream action (fun _ ->
-      peak_token stream |> (fun x -> x = expected)) 
+let go_until_token (stream : Stream.t) (action : Stream.t -> 'a)
+    (expected : string) =
+  let res =
+    go_until stream action (fun _ -> peak_token stream |> fun x -> x = expected)
   in
   let _ = consume_keyword stream expected in
   res
 
-
-let go_until_char (stream: Stream.t) (action: (Stream.t -> 'a)) (expected: char) =
-  let res = go_until stream action (fun _ -> 
-    skip_whitespaces stream; 
-    peek_char stream |> (fun x -> x = expected)
-  )
+let go_until_char (stream : Stream.t) (action : Stream.t -> 'a)
+    (expected : char) =
+  let res =
+    go_until stream action (fun _ ->
+        skip_whitespaces stream;
+        peek_char stream |> fun x -> x = expected)
   in
   let _ = consume_char stream expected in
   res
 
-
-let choice (stream: Stream.t) (variants: (string * (Stream.t -> 'a)) list): 'a =
+let choice (stream : Stream.t) (variants : (string * (Stream.t -> 'a)) list) :
+    'a =
   let tok = read_token stream in
   match List.find_opt (fun (x, _) -> x = tok) variants with
-  | None -> errorl stream (Printf.sprintf "Unexpected token %s" tok)
-  | Some (_, action) -> action stream
+  | None ->
+      errorl stream (Printf.sprintf "Unexpected token %s" tok)
+  | Some (_, action) ->
+      action stream
 
-
-let if_next_char (stream: Stream.t) (expected: char) (action: Stream.t -> 'a) (otherwise: Stream.t -> 'a) =
+let if_next_char (stream : Stream.t) (expected : char) (action : Stream.t -> 'a)
+    (otherwise : Stream.t -> 'a) =
   skip_whitespaces stream;
   let ch = peek_char stream in
   if ch = expected then
     let _ = consume_char stream expected in
     action stream
-  else
-    otherwise stream
-
+  else otherwise stream
 
 let rec parse_type_app stream : Type.t list =
   let fst = parse_type_expr stream in
-  let tail = go_until_char stream (fun s -> consume_char s ','; parse_type_expr s) ']' in
+  let tail =
+    go_until_char stream
+      (fun s ->
+        consume_char s ',';
+        parse_type_expr s)
+      ']'
+  in
   fst :: tail
 
-
-and parse_type_expr (stream: Stream.t): Type.t =
+and parse_type_expr (stream : Stream.t) : Type.t =
   skip_whitespaces stream;
 
-  if_next_char stream '$' (fun _ ->
-    Type.Var (ident ~kind:Upper stream)
-  ) ( fun _ ->
-    let tname = ident ~kind:Upper stream in
-    if_next_char stream '[' (fun _ -> 
-      let args = parse_type_app stream in
-      Type.App (tname, args)
-    ) (fun _ -> 
-      Type.Atom tname
-    )
-  )
+  if_next_char stream '$'
+    (fun _ -> Type.Var (ident ~kind:Upper stream))
+    (fun _ ->
+      let tname = ident ~kind:Upper stream in
+      if_next_char stream '['
+        (fun _ ->
+          let args = parse_type_app stream in
+          Type.App (tname, args))
+        (fun _ -> Type.Atom tname))
 
-
-let parse_type_constr stream: string * Type.t =
+let parse_type_constr stream : string * Type.t =
   let name = ident ~kind:Upper stream in
   if_next_char stream '['
-  (fun _ ->
+    (fun _ ->
       let fst = parse_type_expr stream in
-      let tail = go_until_char stream 
-        (fun s -> consume_char s ','; parse_type_expr s) ']' 
+      let tail =
+        go_until_char stream
+          (fun s ->
+            consume_char s ',';
+            parse_type_expr s)
+          ']'
       in
-      let params = fst::tail in
-    let is_var = List.for_all (fun p -> 
-        match p with 
-        | Type.Var _ -> true 
-        | _ -> false
-      ) params 
-    in
-    if not is_var 
-      then errorl stream "Type parameters can be only variables"
-      else (name, Type.App (name, params)) 
-  ) 
-  (fun _ ->
-    name, Type.Atom name  
-  )
+      let params = fst :: tail in
+      let is_var =
+        List.for_all
+          (fun p ->
+            match p with
+            | Type.Var _ ->
+                true
+            | _ ->
+                false)
+          params
+      in
+      if not is_var then errorl stream "Type parameters can be only variables"
+      else (name, Type.App (name, params)))
+    (fun _ -> (name, Type.Atom name))
 
-
-let parse_data_constrs stream: Type.variant list =
+let parse_data_constrs stream : Type.variant list =
   let open Type in
-  go_until_token stream (fun _ ->
-    consume_char stream '|';
-    let vname = ident stream in
-    if_next_char stream '(' 
+  go_until_token stream
     (fun _ ->
-      let fst_name = ident stream in
-      let fst_tpe = consume_char stream ':'; parse_type_expr stream in
-      let tail = go_until_char stream (fun _ ->
-        consume_char stream ',';
-        let aname = ident stream in
-        consume_char stream ':';
-        let texp = parse_type_expr stream in 
-        (aname, texp)
-      ) ')'
+      consume_char stream '|';
+      let vname = ident stream in
+      if_next_char stream '('
+        (fun _ ->
+          let fst_name = ident stream in
+          let fst_tpe =
+            consume_char stream ':';
+            parse_type_expr stream
+          in
+          let tail =
+            go_until_char stream
+              (fun _ ->
+                consume_char stream ',';
+                let aname = ident stream in
+                consume_char stream ':';
+                let texp = parse_type_expr stream in
+                (aname, texp))
+              ')'
+          in
+          let args = (fst_name, fst_tpe) :: tail in
+          let anames, texps = List.split args in
+          { vname; vargs = anames; vtemplate = Type.App (vname, texps) })
+        (fun _ -> { vname; vargs = []; vtemplate = Type.Atom vname }))
+    "end"
+
+let parse_def_args stream : string list =
+  consume_char stream '(';
+  match read_char stream with
+  | ')' ->
+      []
+  | c ->
+      unread_char stream c;
+      let fst = ident stream in
+      let tail =
+        go_until_char stream
+          (fun s ->
+            consume_char s ',';
+            ident s)
+          ')'
       in
-      let args = (fst_name, fst_tpe) :: tail in
-      let (anames, texps) = List.split args in
-      {vname=vname; vargs=anames; vtemplate=Type.App (vname, texps)}
-    )
-    (fun _ ->
-      {vname=vname; vargs=[]; vtemplate=Type.Atom vname}
-    )
-  ) "end"
+      fst :: tail
 
-
-let parse_def_args stream: string list =
+let rec parse_call_args stream : Node.t list =
   consume_char stream '(';
   match read_char stream with
-  | ')' -> []
-  | c   ->
-    unread_char stream c;
-    let fst = ident stream in
-    let tail = go_until_char stream (fun s -> consume_char s ','; ident s) ')' in
-    fst :: tail
-
-
-let rec parse_call_args stream: Node.t list =
-  consume_char stream '(';
-  match read_char stream with
-  | ')' -> []
-  | c   ->
-    unread_char stream c;
-    let fst = parse_infix_exp stream in
-    let tail = go_until_char stream (fun s -> consume_char s ','; parse_infix_exp s) ')' in
-    fst :: tail
-
+  | ')' ->
+      []
+  | c ->
+      unread_char stream c;
+      let fst = parse_infix_exp stream in
+      let tail =
+        go_until_char stream
+          (fun s ->
+            consume_char s ',';
+            parse_infix_exp s)
+          ')'
+      in
+      fst :: tail
 
 and parse_list_literal stream : Node.t list =
   match read_char stream with
-  | ']' -> Errors.syntax_error "Internal error" (* This case should be checked by caller *)
-  | c   ->
-    unread_char stream c;
-    let fst = parse_infix_exp stream in
-    let tail = go_until_char stream (fun s -> consume_char s ','; parse_infix_exp s) ']' in
-    fst :: tail
+  | ']' ->
+      Errors.syntax_error
+        "Internal error" (* This case should be checked by caller *)
+  | c ->
+      unread_char stream c;
+      let fst = parse_infix_exp stream in
+      let tail =
+        go_until_char stream
+          (fun s ->
+            consume_char s ',';
+            parse_infix_exp s)
+          ']'
+      in
+      fst :: tail
 
+and parse_cond_subexps stream : (Node.t * Node.t) list =
+  go_until_token stream
+    (fun _ ->
+      consume_keyword stream "|";
+      let condition = parse_infix_exp stream in
+      consume_keyword stream "=>";
+      let branch = parse_infix_exp stream in
+      (condition, branch))
+    "endcond"
 
-and parse_cond_subexps stream: (Node.t * Node.t) list =
-  go_until_token stream (fun _ ->
-    consume_keyword stream "|";
-    let condition = parse_infix_exp stream in
-    consume_keyword stream "=>";
-    let branch = parse_infix_exp stream in
-    (condition, branch)
-  ) "endcond"
-
-
-and parse_exp (stream: Stream.t) : Node.t =
+and parse_exp (stream : Stream.t) : Node.t =
   let open Shared.Ir.Node in
-
   skip_whitespaces stream;
   let line = stream.line_num in
 
   let ch = read_char stream in
 
   if ch = '(' then
-    if_next_char stream ')' 
-      (fun _ -> literal Unit ~line:line ())
-      (fun _ -> 
+    if_next_char stream ')'
+      (fun _ -> literal Unit ~line ())
+      (fun _ ->
         let iexp = parse_infix_exp stream in
         consume_char stream ')';
-        iexp
-      )
-  else
-
-  if ch = '#' then (* TODO remove and represent as ADT *)
+        iexp)
+  else if ch = '#' then (* TODO remove and represent as ADT *)
     match read_token stream with
-    | "True"  -> literal (Bool true) ~line:line ()
-    | "False" -> literal (Bool false) ~line:line ()
-    | _ -> errorl stream "Error while parsing boolean literal"
-  else 
-
-  if Token.is_digit ch || ch = '-' then begin
+    | "True" ->
+        literal (Bool true) ~line ()
+    | "False" ->
+        literal (Bool false) ~line ()
+    | _ ->
+        errorl stream "Error while parsing boolean literal"
+  else if Token.is_digit ch || ch = '-' then (
     unread_char stream ch;
-    literal (Int (stream |> read_token |> int_of_string)) ~line:line ()
-  end else
-
-  if ch = '[' then
+    literal (Int (stream |> read_token |> int_of_string)) ~line ())
+  else if ch = '[' then (
     let ch' = read_char stream in
     match ch' with
-    | ']' -> literal Nil ~line:line ()
-    | _   -> 
-      unread_char stream ch'; 
-      let args = parse_list_literal stream in
-      node ListLiteral ~args:args ~line:line ()
-  else 
-
-  let _   = unread_char stream ch   in
-  let tok = read_token stream in
-
-  if tok = "if" then
-    let condition = parse_infix_exp stream in
-    consume_keyword stream "then";
-    let branch1 = parse_infix_exp stream in
-    consume_keyword stream "else";
-    let branch2 = parse_infix_exp stream in
-    node If ~args:[condition; branch1; branch2] ~line:line ()
+    | ']' ->
+        literal Nil ~line ()
+    | _ ->
+        unread_char stream ch';
+        let args = parse_list_literal stream in
+        node ListLiteral ~args ~line ())
   else
+    let _ = unread_char stream ch in
+    let tok = read_token stream in
 
-  if tok = "let" then
-    let binding = identifier (ident stream) () in
-    consume_keyword stream "=";
-    let val_exp = parse_infix_exp stream in
-    consume_keyword stream "in";
-    let body_exp = parse_infix_exp stream in
-    node Let ~args:[binding; val_exp; body_exp] ~line:line ()
-  else
-
-  if tok = "cond" then
-    let args = parse_cond_subexps stream in
-    (* Cond node args are stored as:
+    if tok = "if" then (
+      let condition = parse_infix_exp stream in
+      consume_keyword stream "then";
+      let branch1 = parse_infix_exp stream in
+      consume_keyword stream "else";
+      let branch2 = parse_infix_exp stream in
+      node If ~args:[ condition; branch1; branch2 ] ~line ())
+    else if tok = "let" then (
+      let binding = identifier (ident stream) () in
+      consume_keyword stream "=";
+      let val_exp = parse_infix_exp stream in
+      consume_keyword stream "in";
+      let body_exp = parse_infix_exp stream in
+      node Let ~args:[ binding; val_exp; body_exp ] ~line ())
+    else if tok = "cond" then
+      let args = parse_cond_subexps stream in
+      (* Cond node args are stored as:
        [c1; b1; c2; b2 ... cn; bn]
     *)
-    node Cond 
-      ~args:(List.concat_map (fun (c, b) -> [c; b]) args)
-      ~line:line ()
-  else
+      node Cond ~args:(List.concat_map (fun (c, b) -> [ c; b ]) args) ~line ()
+    else if tok = "fn" then (
+      let args = parse_def_args stream in
+      consume_keyword stream "=";
+      let body = parse_infix_exp stream in
+      node Lambda
+        ~args:(List.map (fun a -> identifier a ()) args @ [ body ])
+        ~line ())
+    else if is_valid_ident tok then (
+      skip_whitespaces stream;
+      let ch = read_char stream in
+      match ch with
+      | '(' ->
+          let _ = unread_char stream ch in
+          let args = parse_call_args stream in
+          node Call ~name:(Some tok) ~args ~line ()
+      | _ ->
+          unread_char stream ch;
+          identifier tok ())
+    else errorl stream (Printf.sprintf "Unexpected token: %s" tok)
 
-  if tok = "fn" then
-    let args = parse_def_args stream in
-    consume_keyword stream "=";
-    let body = parse_infix_exp stream in
-    node Lambda 
-      ~args:((List.map (fun a -> identifier a ()) args) @ [body])
-      ~line:line ()
-  else
-
-  if is_valid_ident tok then begin
-    skip_whitespaces stream;
-    let ch = read_char stream in
-    match ch with
-    | '(' ->
-      let _ = unread_char stream ch in
-      let args = parse_call_args stream in 
-      node Call ~name:(Some tok) ~args:args ~line:line ()
-    | _ -> unread_char stream ch; identifier tok ()
-  end else
-
-  errorl stream (Printf.sprintf "Unexpected token: %s" tok)
-
-
-and parse_infix_exp (stream: Stream.t): Node.t =
+and parse_infix_exp (stream : Stream.t) : Node.t =
   let open Shared.Ir.Node in
-
   skip_whitespaces stream;
   let line = stream.line_num in
 
-  let is_infix_op token = 
-    token <> "" 
-    && not (Token.is_keyword token) 
-    && String.for_all (fun c -> List.mem c Token.infix_op_char) token 
+  let is_infix_op token =
+    token <> ""
+    && (not (Token.is_keyword token))
+    && String.for_all (fun c -> List.mem c Token.infix_op_char) token
   in
 
   let exp1 = parse_exp stream in
   let token = read_token stream in
   if is_infix_op token then
     let exp2 = parse_exp stream in
-    node Call ~name:(Some token) ~args:[exp1; exp2] ~line:line ()
-  else begin
+    node Call ~name:(Some token) ~args:[ exp1; exp2 ] ~line ()
+  else (
     unread_token stream token;
-    exp1
-  end
+    exp1)
 
-
-let parse_def (stream: Stream.t): def_desc option =
+let parse_def (stream : Stream.t) : def_desc option =
   skip_whitespaces stream;
   let line = stream.line_num in
-  choice stream [
-    ("const", fun stream ->
-      let name = ident stream in
-      Stream.with_def stream (Some name) (fun () ->
-        consume_keyword stream "=";
-        let body = parse_infix_exp stream in
-        Some { kind=Const; 
-               name=name; 
-               args=[]; 
-               line=line; 
-               def_type=None; 
-               body_tree=Some body }
-      )
-    );
-    ("type", fun stream ->
-      let open Type in  
-      let (name, tpe) = parse_type_constr stream in
-      Stream.with_def stream (Some name) (fun () ->
-        consume_keyword stream "=";
-        let variants = parse_data_constrs stream in
-        AdtRegistry.add {name=name; template=tpe; variants=variants};
-        None
-      )
-    );
-    ("fn", fun stream ->
-      let name = ident stream in
-      Stream.with_def stream (Some name) (fun () ->
-        let args = parse_def_args stream in
-        let tpe = if_next_char stream ':' (fun _ ->
-          Some (parse_type_expr stream)
-        ) (fun _ -> None)
-        in
-        consume_keyword stream "=";
-        let val_exp = parse_infix_exp stream in
-        Some { kind=FuncDef; 
-               name=name; 
-               args=args; 
-               line=line; 
-               def_type=tpe; 
-               body_tree=Some val_exp }
-      )
-    );
-    ("decl", fun stream -> (* as FuncDef but without body *)
-      let name = ident stream in
-      let args = parse_def_args stream in
-      consume_char stream ':';
-      let tpe = parse_type_expr stream in
-      Some { kind=FuncDecl;
-             name=name; 
-             args=args; 
-             line=line; 
-             def_type=(Some tpe); 
-             body_tree=None }
-    );
-  ]
+  choice stream
+    [
+      ( "const",
+        fun stream ->
+          let name = ident stream in
+          Stream.with_def stream (Some name) (fun () ->
+              consume_keyword stream "=";
+              let body = parse_infix_exp stream in
+              Some
+                {
+                  kind = Const;
+                  name;
+                  args = [];
+                  line;
+                  def_type = None;
+                  body_tree = Some body;
+                }) );
+      ( "type",
+        fun stream ->
+          let open Type in
+          let name, tpe = parse_type_constr stream in
+          Stream.with_def stream (Some name) (fun () ->
+              consume_keyword stream "=";
+              let variants = parse_data_constrs stream in
+              AdtRegistry.add { name; template = tpe; variants };
+              None) );
+      ( "fn",
+        fun stream ->
+          let name = ident stream in
+          Stream.with_def stream (Some name) (fun () ->
+              let args = parse_def_args stream in
+              let tpe =
+                if_next_char stream ':'
+                  (fun _ -> Some (parse_type_expr stream))
+                  (fun _ -> None)
+              in
+              consume_keyword stream "=";
+              let val_exp = parse_infix_exp stream in
+              Some
+                {
+                  kind = FuncDef;
+                  name;
+                  args;
+                  line;
+                  def_type = tpe;
+                  body_tree = Some val_exp;
+                }) );
+      ( "decl",
+        fun stream ->
+          (* as FuncDef but without body *)
+          let name = ident stream in
+          let args = parse_def_args stream in
+          consume_char stream ':';
+          let tpe = parse_type_expr stream in
+          Some
+            {
+              kind = FuncDecl;
+              name;
+              args;
+              line;
+              def_type = Some tpe;
+              body_tree = None;
+            } );
+    ]
 
-
-let parse_module stream: module_desc =
+let parse_module stream : module_desc =
   logScoped PARSER "parsing module" (fun () ->
-    try
-      consume_keyword stream "module";
-      let name = ident ~kind:Token.Upper stream in
-      Stream.with_module stream (Some name) (fun () -> 
-        consume_keyword stream "begin";
+      try
+        consume_keyword stream "module";
+        let name = ident ~kind:Token.Upper stream in
+        Stream.with_module stream (Some name) (fun () ->
+            consume_keyword stream "begin";
 
-        let defs0 = go_until_token stream parse_def "end" in
-        let defs = List.filter_map Fun.id defs0 in
+            let defs0 = go_until_token stream parse_def "end" in
+            let defs = List.filter_map Fun.id defs0 in
 
-        {
-          name=name; 
-          imports=[]; (* TODO parse *)
-          exports=[]; (* TODO parse *)
-          defs=defs
-        }
-      )
-    with (e: exn) -> 
-        print_endline (Printexc.to_string e);
-        exit 1
-  )
-
+            {
+              name;
+              imports = [];
+              (* TODO parse *)
+              exports = [];
+              (* TODO parse *)
+              defs;
+            })
+      with
+      | (e : exn) ->
+          print_endline (Printexc.to_string e);
+          exit 1)
 
 (** Parsing entrypoint *)
-let parse : ir_transformer = fun input ->
+let parse : ir_transformer =
+ fun input ->
   match input with
   | Channel chan ->
-    let stream = Stream.create chan in
-    Module (parse_module stream)
-  | _ -> raise (InvalidIRKind "Parser expects channel as input")
+      let stream = Stream.create chan in
+      Module (parse_module stream)
+  | _ ->
+      raise (InvalidIRKind "Parser expects channel as input")
